@@ -2,7 +2,7 @@
 
 ```
 buaut split --iban --includes --excludes --users=wilmar94do@hotmail.com,rosefull@gmail.com --percentages=60,40
-buaut --sandbox --iban=<iban> --api-key=<key> request --request sugardaddy@bunq.com 10 --request sugardaddy@bunq.com 20 --description="Test double user"
+buaut --sandbox --iban=<iban> --api-key=<key> request --get sugardaddy@bunq.com 10 --get sugardaddy@bunq.com 20 --description="Test double user"
 ```
 
 ## Release

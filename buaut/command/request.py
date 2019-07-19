@@ -12,8 +12,8 @@ from buaut import helpers
 @click.command()
 @click.pass_context
 @click.option(
-    '--request',
-    help='Email and amount (xx.xx) to request from',
+    '--get',
+    help='Email and amount (xx.xx) to request',
     required=True,
     multiple=True,
     type=(str, float)
@@ -30,12 +30,12 @@ from buaut import helpers
     type=click.STRING,
     default='EUR'
 )
-def request(ctx, request: List[tuple], description: str, currency: str):
+def request(ctx, get: List[tuple], description: str, currency: str):
     """Request on or more user for one or more amount
 
     Args:
         ctx ([type]): Click object containing the arguments from global
-        request ([tuple]): List of users to request from
+        get ([tuple]): List of users to request from
         description (str): Description for the request
         currency (str): Currency in an ISO 4217 formatted currency code
     """
@@ -46,7 +46,7 @@ def request(ctx, request: List[tuple], description: str, currency: str):
 
     request_inqueries: List[dict] = []
     total_amount_inquired: int = 0
-    for email, amount in request:
+    for email, amount in get:
       # Add amount to total
       total_amount_inquired += amount
       # Convert to valid Bunq currency string
