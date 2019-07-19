@@ -10,3 +10,4 @@ import click
     )
 )
 def split(ctx, upgrade, requirements):
+  print("NI")

@@ -1,0 +1,5 @@
+{
+  "python.pythonPath": "wvenv\\Scripts\\python.exe",
+  "autoDocstring.docstringFormat": "google",
+  "autoDocstring.guessTypes": true
+}
