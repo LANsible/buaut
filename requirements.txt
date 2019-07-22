@@ -2,3 +2,4 @@ pbr == 5.2.1  # Needed for pbr.version
 bunq-sdk
 click
 pyyaml
+validators

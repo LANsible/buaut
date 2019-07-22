@@ -1,8 +1,8 @@
 # Typehinting
-from typing import Callable, Iterator, Union, Optional, List
+from typing import List, Tuple
 
 import click
-import sys
+import validators
 from bunq.sdk.model.generated import endpoint
 from bunq.sdk.model.generated.object_ import Pointer, Amount
 
@@ -28,9 +28,10 @@ from buaut import helpers
     '--currency',
     help='Currency for the requests in an ISO 4217 formatted currency code.',
     type=click.STRING,
-    default='EUR'
+    default='EUR',
+    show_default=True
 )
-def request(ctx, get: List[tuple], description: str, currency: str):
+def request(ctx, get: List[Tuple[str, float]], description: str, currency: str):
     """Request on or more user for one or more amount
 
     Args:
@@ -39,31 +40,11 @@ def request(ctx, get: List[tuple], description: str, currency: str):
         description (str): Description for the request
         currency (str): Currency in an ISO 4217 formatted currency code
     """
-    # Get global args
-    args = ctx.obj.get('args')
-    monetary_account_id: str = helpers.get_monetary_account_id(
-        type='IBAN', value=args['iban'])
+    monetary_account_id: int = ctx.obj.get('monetary_account_id')
 
-    request_inqueries: List[dict] = []
-    total_amount_inquired: int = 0
-    for email, amount in get:
-      # Add amount to total
-      total_amount_inquired += amount
-      # Convert to valid Bunq currency string
-      amount: str = helpers.convert_to_valid_amount(amount)
-      # Create request and append to request_inqueries list
-      request_inqueries.append({
-          'amount_inquired': Amount(amount, currency),
-          'counterparty_alias': Pointer(type_='EMAIL', value=email),
-          'description': description,
-          'allow_bunqme': True
-      })
-
-    # Convert to valid Bunq currency string
-    total_amount_inquired: str = helpers.convert_to_valid_amount(
-        total_amount_inquired)
-    endpoint.RequestInquiryBatch.create(
-        request_inquiries=request_inqueries,
-        total_amount_inquired=Amount(total_amount_inquired, currency),
-        monetary_account_id=monetary_account_id
+    helpers.create_request_batch(
+      monetary_account_id=monetary_account_id,
+      requests=get,
+      description=description,
+      currency=currency
     )

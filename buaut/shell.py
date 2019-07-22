@@ -1,3 +1,6 @@
+# Typehinting
+from typing import Callable, Iterator, Union, Optional, List
+import validators
 import pbr.version
 import socket
 import click
@@ -5,13 +8,16 @@ import click
 from buaut import command
 from bunq.sdk.context import ApiContext, BunqContext, ApiEnvironmentType
 
+from buaut import helpers
+
+
 @click.group()
 @click.option(
     '--iban',
     envvar='BUAUT_IBAN',
     required=True,
     help='Enter IBAN where to run a function. '
-          'Can be set as environment variable BUAUT_IBAN',
+    'Can be set as environment variable BUAUT_IBAN',
     type=click.STRING
 )
 @click.option(
@@ -19,7 +25,7 @@ from bunq.sdk.context import ApiContext, BunqContext, ApiEnvironmentType
     envvar='BUAUT_API_KEY',
     required=True,
     help='Provide the api token for the Bunq API. '
-          'Can be set as environment variable BUAUT_API_KEY',
+    'Can be set as environment variable BUAUT_API_KEY',
     type=click.STRING
 )
 @click.option(
@@ -27,11 +33,11 @@ from bunq.sdk.context import ApiContext, BunqContext, ApiEnvironmentType
     envvar='BUAUT_SANDBOX',
     is_flag=True,
     help='Pass when testing against the Bunq sandbox. '
-          'Can be set as environment variable BUAUT_IBAN',
+    'Can be set as environment variable BUAUT_IBAN',
 )
 @click.version_option(version=pbr.version.VersionInfo('buaut'))
 @click.pass_context
-def main(ctx, sandbox, iban, api_key):
+def main(ctx, iban: str, api_key: str, sandbox: bool):
     """
     \b
      ____                    _
@@ -49,21 +55,36 @@ def main(ctx, sandbox, iban, api_key):
     Enable autocomplete for ZSH (.zshrc):
       eval "$(_BUAUT_COMPLETE=source_zsh buaut)"
     """
-    ctx.obj = {}
-    ctx.obj['args'] = {}
-    ctx.obj['args']['iban'] = iban
-    ctx.obj['args']['api_key'] = api_key
-
     # Set Bunq context
     context = ApiEnvironmentType.SANDBOX if sandbox \
-              else ApiEnvironmentType.PRODUCTION
+        else ApiEnvironmentType.PRODUCTION
 
     # Setup Bunq authentication
     api_context = ApiContext(context, api_key,
-      socket.gethostname())
+                             socket.gethostname())
     api_context.ensure_session_active()
 
     # Load api context into BunqContext used for subsequent calls
     BunqContext.load_api_context(api_context)
 
+    if validators.iban(iban):
+      try:
+        # Set monetary_account_id
+        monetary_account_id: int = helpers.get_monetary_account_id(
+            type='IBAN', value=iban)
+      except:
+        # TODO: Exit nicely
+        exit(1)
+    else:
+      # TODO: Exit nicely
+      exit(1)
+
+    # Append to ctx object to have available in commands
+    ctx.obj: dict = {}
+    ctx.obj['args']: dict = {}
+    ctx.obj['args']['iban']: str = iban
+    ctx.obj['args']['api_key']: str = api_key
+    ctx.obj['monetary_account_id']: int = monetary_account_id
+
 main.add_command(command.request.request)
+main.add_command(command.split.split)
