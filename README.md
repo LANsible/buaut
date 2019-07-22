@@ -1,7 +1,7 @@
 # bunq-automations
 
 ```
-buaut split --iban --includes --excludes --users=wilmar94do@hotmail.com,rosefull@gmail.com --percentages=60,40
+buaut split --iban --includes "NL12BUNQ123123123,NL12BUNQ123123123" --excludes "NL12BUNQ123123123,NL12BUNQ123123123" --get sugardaddy@bunq.com 10 --get sugardaddy@bunq.com 20
 buaut --sandbox --iban=<iban> --api-key=<key> request --get sugardaddy@bunq.com 10 --get sugardaddy@bunq.com 20 --description="Test double user"
 ```
 
