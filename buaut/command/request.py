@@ -2,7 +2,7 @@
 from typing import List, Tuple
 
 import click
-import validators
+
 from bunq.sdk.model.generated import endpoint
 from bunq.sdk.model.generated.object_ import Pointer, Amount
 

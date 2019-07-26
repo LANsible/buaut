@@ -1,5 +1,6 @@
 # Typehinting
-from typing import Callable, Iterator, Union, Optional, List
+from typing import List
+
 import validators
 import pbr.version
 import socket
