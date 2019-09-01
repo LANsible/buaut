@@ -1,0 +1,7 @@
+*
+!.git/
+!buaut/
+!requirements.txt
+!setup.cfg
+!setup.py
+!README.md
