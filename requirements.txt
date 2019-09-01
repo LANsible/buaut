@@ -1,5 +1,5 @@
-pbr == 5.2.1  # Needed for pbr.version
-bunq-sdk
-click
-pyyaml
-validators
+pbr == 5.4.2  # Needed for pbr.version
+bunq-sdk == 1.10.16
+click == 7.0
+pyyaml == 5.1.2
+validators == 0.14.0
