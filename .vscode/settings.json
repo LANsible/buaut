@@ -1,5 +1,5 @@
 {
-  "python.pythonPath": "wvenv\\Scripts\\python.exe",
+  "python.pythonPath": "venv/bin/python",
   "autoDocstring.docstringFormat": "google",
   "autoDocstring.guessTypes": true
 }

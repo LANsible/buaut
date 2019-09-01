@@ -36,9 +36,16 @@ from buaut import helpers
     help='Pass when testing against the Bunq sandbox. '
     'Can be set as environment variable BUAUT_IBAN',
 )
+@click.option(
+    '--currency',
+    help='Currency for the requests in an ISO 4217 formatted currency code.',
+    type=click.STRING,
+    default='EUR',
+    show_default=True
+)
 @click.version_option(version=pbr.version.VersionInfo('buaut'))
 @click.pass_context
-def main(ctx, iban: str, api_key: str, sandbox: bool):
+def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
     """
     \b
      ____                    _
@@ -69,16 +76,16 @@ def main(ctx, iban: str, api_key: str, sandbox: bool):
     BunqContext.load_api_context(api_context)
 
     if validators.iban(iban):
-      try:
-        # Set monetary_account_id
-        monetary_account_id: int = helpers.get_monetary_account_id(
-            type='IBAN', value=iban)
-      except:
+        try:
+            # Set monetary_account_id
+            monetary_account_id: int = helpers.get_monetary_account_id(
+                value_type='IBAN', value=iban)
+        except:
+            # TODO: Exit nicely
+            exit(1)
+    else:
         # TODO: Exit nicely
         exit(1)
-    else:
-      # TODO: Exit nicely
-      exit(1)
 
     # Append to ctx object to have available in commands
     ctx.obj: dict = {}
@@ -86,6 +93,8 @@ def main(ctx, iban: str, api_key: str, sandbox: bool):
     ctx.obj['args']['iban']: str = iban
     ctx.obj['args']['api_key']: str = api_key
     ctx.obj['monetary_account_id']: int = monetary_account_id
+    ctx.obj['currency']: str = currency
+
 
 main.add_command(command.request.request)
 main.add_command(command.split.split)

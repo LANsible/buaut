@@ -9,30 +9,30 @@ from bunq.sdk.model.generated import endpoint
 from bunq.sdk.model.generated.object_ import Pointer, Amount
 
 
-def get_monetary_account_id(type: str, value: str) -> int:
-  """Get account_id with api types
+def get_monetary_account_id(value_type: str, value: str) -> int:
+    """Get account_id with api types
 
-  Args:
-      type (str): Possible values: IBAN, EMAIL, PHONE_NUMBER
-      value (str): Value of defined type
+    Args:
+        type (str): Possible values: IBAN, EMAIL, PHONE_NUMBER
+        value (str): Value of defined type
 
-  Returns:
-      int: monetary account id
+    Returns:
+        int: monetary account id
 
-  Raises:
-      ValueError: If match is not found
-  """
-  pagination = Pagination()
-  pagination.count = 25
-  monetaryaccount_list = endpoint.MonetaryAccount.list(
-      params=pagination.url_params_count_only).value
+    Raises:
+        ValueError: If match is not found
+    """
+    pagination = Pagination()
+    pagination.count = 25
+    monetaryaccount_list = endpoint.MonetaryAccount.list(
+        params=pagination.url_params_count_only).value
 
-  for monetaryaccount in monetaryaccount_list:
-    for alias in monetaryaccount.MonetaryAccountBank.alias:
-      if alias.type_ == type and alias.value == value:
-        return monetaryaccount.MonetaryAccountBank.id_
+    for monetaryaccount in monetaryaccount_list:
+        for alias in monetaryaccount.MonetaryAccountBank.alias:
+            if alias.type_ == value_type and alias.value == value:
+                return monetaryaccount.MonetaryAccountBank.id_
 
-  raise ValueError
+    raise ValueError
 
 
 def convert_to_valid_amount(amount: any) -> str:
@@ -49,52 +49,59 @@ def convert_to_valid_amount(amount: any) -> str:
 
 
 def comma_seperated_string_to_list(string: str) -> List[str]:
-  """Convert comma seperated string to list
+    """Convert comma seperated string to list
 
-  Args:
-      string (str): Comma seperated string to split
+    Args:
+        string (str): Comma seperated string to split
 
-  Returns:
-      List: List contain the items of the string
-  """
-  # Source: https://stackoverflow.com/a/12760144
-  pattern = re.compile("^\s+|\s*,\s*|\s+$")
-  return pattern.split(string)
+    Returns:
+        List: List contain the items of the string
+    """
+    # Source: https://stackoverflow.com/a/12760144
+    pattern = re.compile(r"^\s+|\s*,\s*|\s+$")
+    return pattern.split(string)
 
 
-def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str):
-  """Create request batch from a list of requests
+def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str, event_id_field_for_request: int=None):
+    """Create request batch from a list of requests
 
-  Args:
-      monetary_account_id (int): Account id where the requests are made from
-      requests (List[tuple]): List of tuples containing email and amount
-      description (str): [description]
-      currency (str): [description]
-  """
-  request_inqueries: List[dict] = []
-  total_amount_inquired: int = 0
+    Args:
+        monetary_account_id (int): Account id where the requests are made from
+        requests (List[tuple]): List of tuples containing email and amount
+        description (str): [description]
+        currency (str): [description]
+    """
+    request_inqueries: List[dict] = []
+    total_amount_inquired: int = 0
 
-   for email, amount in requests:
-      # Check if valid email
-      # TODO: Create some logging class and exit with message
-      if not validators.email(email):
-        exit(1)
+    for email, amount in requests:
+        # Check if valid email
+        # TODO: Create some logging class and exit with message
+        if not validators.email(email):
+            exit(1)
 
-      # Add amount to total
-      total_amount_inquired += amount
-      # Convert to valid Bunq currency string
-      amount: str = convert_to_valid_amount(amount)
-      # Create request and append to request_inqueries list
-      request_inqueries.append({
-          'amount_inquired': Amount(amount, currency),
-          'counterparty_alias': Pointer(type_='EMAIL', value=email),
-          'description': description,
-          'allow_bunqme': True
-      })
+        # Add amount to total
+        total_amount_inquired += amount
+        # Convert to valid Bunq currency string
+        amount_string: str = convert_to_valid_amount(amount)
+        # Create request and append to request_inqueries list
+        request = endpoint.RequestInquiry(
+            amount_inquired=Amount(amount_string, currency),
+            counterparty_alias=Pointer(type_='EMAIL', value=email),
+            description=description,
+            allow_bunqme=True,
+            event_id=event_id_field_for_request
+        )
+
+        # Add request to list
+        request_inqueries.append(request)
+
 
     # Convert to valid Bunq currency string
     total_amount_inquired: str = convert_to_valid_amount(
         total_amount_inquired)
+
+    # Send the requests to the API to create the requests batch
     endpoint.RequestInquiryBatch.create(
         request_inquiries=request_inqueries,
         total_amount_inquired=Amount(total_amount_inquired, currency),

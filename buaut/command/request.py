@@ -24,14 +24,7 @@ from buaut import helpers
     required=True,
     type=click.STRING
 )
-@click.option(
-    '--currency',
-    help='Currency for the requests in an ISO 4217 formatted currency code.',
-    type=click.STRING,
-    default='EUR',
-    show_default=True
-)
-def request(ctx, get: List[Tuple[str, float]], description: str, currency: str):
+def request(ctx, get: List[Tuple[str, float]], description: str):
     """Request on or more user for one or more amount
 
     Args:
@@ -41,10 +34,11 @@ def request(ctx, get: List[Tuple[str, float]], description: str, currency: str):
         currency (str): Currency in an ISO 4217 formatted currency code
     """
     monetary_account_id: int = ctx.obj.get('monetary_account_id')
+    currency: str = ctx.obj.get('currency')
 
     helpers.create_request_batch(
-      monetary_account_id=monetary_account_id,
-      requests=get,
-      description=description,
-      currency=currency
+        monetary_account_id=monetary_account_id,
+        requests=get,
+        description=description,
+        currency=currency
     )
