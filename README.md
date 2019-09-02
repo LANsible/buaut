@@ -19,3 +19,9 @@ python setup.py develop
 export BUAUT_IBAN=<iban>
 export BUAUT_API_KEY=<key>
 ```
+
+# Docker
+
+```
+docker run -t --tmpfs /tmp:exec wilmardo:buaut
+```
