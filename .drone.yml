@@ -19,26 +19,26 @@ steps:
     - VERSION=${DRONE_TAG:-master}
     tags: ${DRONE_TAG:-master}-amd64
 
----
-kind: pipeline
-name: arm64
+# ---
+# kind: pipeline
+# name: arm64
 
-platform:
-  os: linux
-  arch: arm64
+# platform:
+#   os: linux
+#   arch: arm64
 
-steps:
-- name: build
-  image: plugins/docker
-  settings:
-    username:
-      from_secret: DOCKER_USERNAME
-    password:
-      from_secret: DOCKER_PASSWORD
-    repo: lansible/buaut
-    build_args:
-    - VERSION=${DRONE_TAG:-master}
-    tags: ${DRONE_TAG:-master}-arm64
+# steps:
+# - name: build
+#   image: plugins/docker
+#   settings:
+#     username:
+#       from_secret: DOCKER_USERNAME
+#     password:
+#       from_secret: DOCKER_PASSWORD
+#     repo: lansible/buaut
+#     build_args:
+#     - VERSION=${DRONE_TAG:-master}
+#     tags: ${DRONE_TAG:-master}-arm64
 
 ---
 kind: pipeline
@@ -60,7 +60,7 @@ steps:
     template: lansible/buaut:${DRONE_TAG:-master}-ARCH
     platforms:
     - linux/amd64
-    - linux/arm64
+    # - linux/arm64
 
 - name: manifest-latest
   image: plugins/manifest
@@ -73,11 +73,11 @@ steps:
     template: lansible/buaut:${DRONE_TAG:-master}-ARCH
     platforms:
     - linux/amd64
-    - linux/arm64
+    # - linux/arm64
   when:
     event:
     - tag
 
 depends_on:
 - amd64
-- arm64
+# - arm64
