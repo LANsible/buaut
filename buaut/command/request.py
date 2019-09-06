@@ -21,17 +21,16 @@ from buaut import helpers
 @click.option(
     '--description',
     help='Description for the request',
-    required=True,
+    required=False,
     type=click.STRING
 )
-def request(ctx, get: List[Tuple[str, float]], description: str):
+def request(ctx, get: List[Tuple[str, float]], description: str = "Made by Buaut"):
     """Request on or more user for one or more amount
 
     Args:
         ctx ([type]): Click object containing the arguments from global
         get ([tuple]): List of users to request from
         description (str): Description for the request
-        currency (str): Currency in an ISO 4217 formatted currency code
     """
     monetary_account_id: int = ctx.obj.get('monetary_account_id')
     currency: str = ctx.obj.get('currency')
