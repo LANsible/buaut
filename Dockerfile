@@ -1,4 +1,5 @@
-FROM ubuntu:bionic as builder
+# Using ubuntu for glibc which pyinstaller needs
+FROM ubuntu:disco as builder
 
 RUN apt-get update && \
     apt-get install -y \
@@ -11,16 +12,23 @@ RUN apt-get update && \
       # Optional for pyinstaller
       upx \
       # Required for staticx
-      patchelf
+      patchelf \
+      # Smaller better binaries:
+      # https://github.com/JonathonReinhart/staticx#from-source
+      musl-tools
 
 COPY . /buaut
 RUN pip3 install -r /buaut/requirements.txt && \
-    pip3 install pyinstaller staticx && \
-    pip3 install -e /buaut
+    pip3 install pyinstaller scons && \
+    pip3 install -e /buaut && \
+    # Needed for scons:
+    # /usr/bin/env: python: No such file or directory
+    update-alternatives --set python /usr/bin/python3 && \
+    CC=/usr/bin/musl-gcc pip3 install https://github.com/JonathonReinhart/staticx/archive/master.zip
 
 WORKDIR /buaut
 RUN pyinstaller --strip --onefile /usr/local/bin/buaut && \
-    staticx dist/buaut dist/buaut_static
+    staticx --strip -l /lib/x86_64-linux-gnu/libnss_dns.so.2 -l /lib/x86_64-linux-gnu/libresolv.so.2 dist/buaut dist/buaut_static
 
 # Scratchy yes yes
 FROM scratch
@@ -30,8 +38,10 @@ ENV LC_ALL=C.UTF-8 \
 # Add locale otherwise Click does not work:
 # https://click.palletsprojects.com/en/7.x/python3/
 COPY --from=builder /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
+
+COPY --from=builder /etc/passwd /etc/group /etc/
 # Add ssl certificates
-COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Add compiled binary
 COPY --from=builder /buaut/dist/buaut_static /buaut
 
