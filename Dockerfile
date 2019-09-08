@@ -1,4 +1,4 @@
-# Using ubuntu for glibc which pyinstaller needs
+# Using non alpine for glibc which pyinstaller needs
 FROM ubuntu:disco as builder
 
 RUN apt-get update && \
@@ -23,7 +23,7 @@ RUN pip3 install -r /buaut/requirements.txt && \
     pip3 install -e /buaut && \
     # Needed for scons:
     # /usr/bin/env: python: No such file or directory
-    update-alternatives --set python /usr/bin/python3 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
     CC=/usr/bin/musl-gcc pip3 install https://github.com/JonathonReinhart/staticx/archive/master.zip
 
 WORKDIR /buaut
