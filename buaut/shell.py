@@ -34,7 +34,7 @@ from buaut import helpers
     envvar='BUAUT_SANDBOX',
     is_flag=True,
     help='Pass when testing against the Bunq sandbox. '
-    'Can be set as environment variable BUAUT_IBAN',
+    'Can be set as environment variable BUAUT_SANDBOX',
 )
 @click.option(
     '--currency',
