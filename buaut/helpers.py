@@ -28,9 +28,13 @@ def get_monetary_account_id(value_type: str, value: str) -> int:
         params=pagination.url_params_count_only).value
 
     for monetaryaccount in monetaryaccount_list:
-        for alias in monetaryaccount.MonetaryAccountBank.alias:
+        account = monetaryaccount.MonetaryAccountBank or \
+                    monetaryaccount.MonetaryAccountJoint or \
+                    monetaryaccount.MonetaryAccountLight or \
+                    monetaryaccount.MonetaryAccountSavings
+        for alias in account.alias:
             if alias.type_ == value_type and alias.value == value:
-                return monetaryaccount.MonetaryAccountBank.id_
+                return account.id_
 
     raise ValueError
 
