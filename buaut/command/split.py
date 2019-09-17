@@ -47,9 +47,9 @@ def split(ctx, get: List[Tuple[str, float]], includes: str, excludes: str):
     includes_list: List[str] = []
 
     if includes:
-        includes_list = helpers.comma_seperated_string_to_list(includes)
+        includes_list = helpers.convert_comma_seperated_to_list(includes)
     if excludes:
-        excludes_list = helpers.comma_seperated_string_to_list(excludes)
+        excludes_list = helpers.convert_comma_seperated_to_list(excludes)
 
     # Get all unsplit events
     # NOTE: Using events since we need to pass event_id to the requestInquiry
@@ -175,7 +175,7 @@ def filter_excluded_events(events: List[endpoint.Event], includes: List[str], ex
         payment = event.object_.Payment
         counterparty = payment.counterparty_alias.label_monetary_account
 
-        # When payment in excludes it should be included
+        # When payment not in excludes it should be included
         if counterparty.iban not in excludes:
             # When includes defined check if included, else just append
             if includes:

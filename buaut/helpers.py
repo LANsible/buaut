@@ -52,7 +52,7 @@ def convert_to_valid_amount(amount: any) -> str:
     return "{0:.2f}".format(amount)
 
 
-def comma_seperated_string_to_list(string: str) -> List[str]:
+def convert_comma_seperated_to_list(string: str) -> List[str]:
     """Convert comma seperated string to list
 
     Args:
