@@ -88,12 +88,12 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
         exit(1)
 
     # Append to ctx object to have available in commands
-    ctx.obj: dict = {}
-    ctx.obj['args']: dict = {}
-    ctx.obj['args']['iban']: str = iban
-    ctx.obj['args']['api_key']: str = api_key
-    ctx.obj['monetary_account_id']: int = monetary_account_id
-    ctx.obj['currency']: str = currency
+    ctx.obj = {}
+    ctx.obj['args'] = {}
+    ctx.obj['args']['iban'] = iban
+    ctx.obj['args']['api_key'] = api_key
+    ctx.obj['monetary_account_id'] = monetary_account_id
+    ctx.obj['currency'] = currency
 
 
 main.add_command(command.request.request)

@@ -39,7 +39,7 @@ def get_monetary_account_id(value_type: str, value: str) -> int:
     raise ValueError
 
 
-def convert_to_valid_amount(amount: any) -> str:
+def convert_to_valid_amount(amount) -> str:
     """Convert any datatype to a valid amount (xx.xx)
 
     Args:
@@ -76,7 +76,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         currency (str): [description]
     """
     request_inqueries: List[dict] = []
-    total_amount_inquired: int = 0
+    total_amount_inquired: float = 0
 
     for email, amount in requests:
         # Check if valid email
@@ -100,12 +100,12 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
 
 
     # Convert to valid Bunq currency string
-    total_amount_inquired: str = convert_to_valid_amount(
+    total_amount_inquired_string: str = convert_to_valid_amount(
         total_amount_inquired)
 
     # Send the requests to the API to create the requests batch
     endpoint.RequestInquiryBatch.create(
         request_inquiries=request_inqueries,
-        total_amount_inquired=Amount(total_amount_inquired, currency),
+        total_amount_inquired=Amount(total_amount_inquired_string, currency),
         monetary_account_id=monetary_account_id
     )
