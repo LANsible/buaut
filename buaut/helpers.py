@@ -86,11 +86,9 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
 
         # Add amount to total
         total_amount_inquired += amount
-        # Convert to valid Bunq currency string
-        amount_string: str = convert_to_valid_amount(amount)
         # Create request and append to request_inqueries list
         request = endpoint.RequestInquiry(
-            amount_inquired=Amount(amount_string, currency),
+            amount_inquired=Amount(convert_to_valid_amount(amount), currency),
             counterparty_alias=Pointer(type_='EMAIL', value=email),
             description=description,
             allow_bunqme=True,
