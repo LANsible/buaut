@@ -66,7 +66,7 @@ def split(ctx, get: List[Tuple[str, float]], includes: str, excludes: str):
         requests: List[Tuple[str, float]] = []
         for event in included_events:
             # Split the bill!
-            payment = event.object_.Payment
+            payment = get_payment_object(event.object_.Payment)
 
             # Convert to positive
             amount_to_split: float = float(payment.amount.value) * -1
@@ -89,7 +89,7 @@ def split(ctx, get: List[Tuple[str, float]], includes: str, excludes: str):
                 requests=requests,
                 description=str(description),
                 currency=currency,
-                event_id_field_for_request=event._id
+                event_id_field_for_request=event.id_
             )
             # Request sent so empty requests
             requests = []
@@ -172,7 +172,7 @@ def filter_excluded_events(events: List[endpoint.Event], includes: List[str], ex
     included_events: List[endpoint.Event] = []
     # Loop payments to filter
     for event in events:
-        payment = event.object_.Payment
+        payment = get_payment_object(event.object_.Payment)
         counterparty = payment.counterparty_alias.label_monetary_account
 
         # When payment not in excludes it should be included
@@ -190,3 +190,18 @@ def filter_excluded_events(events: List[endpoint.Event], includes: List[str], ex
 def is_buaut_split_the_bill(payment: endpoint.Payment) -> bool:
     payment.request_reference_split_the_bill
     return False
+
+def get_payment_object(event: endpoint.Payment) -> endpoint.Payment:
+    """Workaround for the issue https://github.com/bunq/sdk_python/issues/116
+    
+    Args:
+        event (endpoint.Payment): Payment object of Event object so incomplete
+    
+    Returns:
+        endpoint.Payment: Payment object but from the payment endpoint
+    """
+    payment = endpoint.Payment.get(
+       payment_id=event.id_,
+       monetary_account_id=event.monetary_account_id
+    )
+    return payment.value
