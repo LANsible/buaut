@@ -5,8 +5,7 @@ import re
 import validators
 
 from bunq.sdk.client import Pagination
-from bunq.sdk.model.generated import endpoint
-from bunq.sdk.model.generated.object_ import Pointer, Amount
+from bunq.sdk.model.generated import endpoint, object_
 
 
 def get_monetary_account_id(value_type: str, value: str) -> int:
@@ -66,14 +65,17 @@ def convert_comma_seperated_to_list(string: str) -> List[str]:
     return pattern.split(string)
 
 
-def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str, event_id_field_for_request: int=None):
+def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str,
+                          event_id: int=None,
+                          reference_split_the_bill: object_.RequestReferenceSplitTheBillAnchorObject=None):
     """Create request batch from a list of requests
 
     Args:
         monetary_account_id (int): Account id where the requests are made from
         requests (List[tuple]): List of tuples containing email and amount
-        description (str): [description]
-        currency (str): [description]
+        description (str): Description for the requests
+        currency (str): Currency for the requests in an ISO 4217 formatted currency code
+        event_id (int): The ID of the associated event if the request batch was made using 'split the bill'.
     """
     request_inqueries: List[dict] = []
     total_amount_inquired: float = 0
@@ -88,11 +90,10 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         total_amount_inquired += amount
         # Create request and append to request_inqueries list
         request = endpoint.RequestInquiry(
-            amount_inquired=Amount(convert_to_valid_amount(amount), currency),
-            counterparty_alias=Pointer(type_='EMAIL', value=email),
+            amount_inquired=object_.Amount(convert_to_valid_amount(amount), currency),
+            counterparty_alias=object_.Pointer(type_='EMAIL', value=email),
             description=description,
-            allow_bunqme=True,
-            event_id=event_id_field_for_request
+            allow_bunqme=True
         )
 
         # Add request to list
@@ -106,6 +107,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
     # Send the requests to the API to create the requests batch
     endpoint.RequestInquiryBatch.create(
         request_inquiries=request_inqueries,
-        total_amount_inquired=Amount(total_amount_inquired_string, currency),
-        monetary_account_id=monetary_account_id
+        total_amount_inquired=object_.Amount(total_amount_inquired_string, currency),
+        monetary_account_id=monetary_account_id,
+        event_id=event_id
     )

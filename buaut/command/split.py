@@ -5,8 +5,7 @@ import click
 import validators
 from bunq.sdk.client import Pagination
 from bunq.sdk.exception import BunqException
-from bunq.sdk.model.generated import endpoint
-from bunq.sdk.model.generated.object_ import Pointer, Amount
+from bunq.sdk.model.generated import endpoint, object_
 from pprint import pprint
 
 from buaut import helpers
@@ -89,7 +88,7 @@ def split(ctx, get: List[Tuple[str, float]], includes: str, excludes: str):
                 requests=requests,
                 description=str(description),
                 currency=currency,
-                event_id_field_for_request=event.id_
+                event_id=event.id_
             )
             # Request sent so empty requests
             requests = []
@@ -136,17 +135,18 @@ def get_all_unsplit_events(monetary_account_id: int) -> List[endpoint.Event]:
 
         for event in events:
             if event.object_.Payment:
-                payment = event.object_.Payment
+                payment = get_payment_object(event.object_.Payment)
                 # Check if it is a sent payment (afschrijving), amount must be negative
-                # TODO: Include requests (Ann requests groceries)
                 if payment.sub_type == "PAYMENT" and float(payment.amount.value) < 0:
                     # Check if the payment has been split
                     if payment.request_reference_split_the_bill:
                         if is_buaut_split_the_bill(payment):
                             # Break loop since this is where we left the last time
                             break
+                        # TODO: Add starting date option
+                        # elif payment.created
                         else:
-                            # Skip payment has been made manually
+                            # Skip request has been made manually
                             continue
 
                     # Append payment to list to return
@@ -186,9 +186,7 @@ def filter_excluded_events(events: List[endpoint.Event], includes: List[str], ex
 
     return included_events
 
-
 def is_buaut_split_the_bill(payment: endpoint.Payment) -> bool:
-    payment.request_reference_split_the_bill
     return False
 
 def get_payment_object(event: endpoint.Payment) -> endpoint.Payment:
