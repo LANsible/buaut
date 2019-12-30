@@ -98,3 +98,4 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
 
 main.add_command(command.request.request)
 main.add_command(command.split.split)
+main.add_command(command.forward.forward)
