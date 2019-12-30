@@ -32,11 +32,11 @@ def request(ctx, get: List[Tuple[str, float]], description: str = "Made by Buaut
         get ([tuple]): List of users to request from
         description (str): Description for the request
     """
-    monetary_account_id: int = ctx.obj.get('monetary_account_id')
+    monetary_account: int = ctx.obj.get('monetary_account')
     currency: str = ctx.obj.get('currency')
 
     utils.create_request_batch(
-        monetary_account_id=monetary_account_id,
+        monetary_account_id=monetary_account.id_,
         requests=get,
         description=description,
         currency=currency

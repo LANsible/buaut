@@ -45,7 +45,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
         includes (click.STRING): Comma seperated string containing includes
         excludes (click.STRING): Comma seperated string containing excludes
     """
-    monetary_account_id: int = ctx.obj.get('monetary_account_id')
+    monetary_account: int = ctx.obj.get('monetary_account')
     currency: str = ctx.obj.get('currency')
 
     excludes_list: List[str] = []
@@ -60,7 +60,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
     # NOTE: Using events since we need to pass event_id to the requestInquiry
     # to get a correct reference
     payment_events: List[endpoint.Event] = utils.get_events(
-        monetary_account_id=monetary_account_id,
+        monetary_account_id=monetary_account.id_,
         types=["Payment"],
         includes=includes_list,
         excludes=excludes_list,
@@ -100,7 +100,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
 
         # Create request batch for payment
         utils.create_request_batch(
-            monetary_account_id=monetary_account_id,
+            monetary_account_id=monetary_account.id_,
             requests=requests,
             description=str(description),
             currency=currency,

@@ -77,8 +77,8 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
 
     if validators.iban(iban):
         try:
-            # Set monetary_account_id
-            monetary_account_id: int = utils.get_monetary_account_id(
+            # Set monetary_account
+            monetary_account: int = utils.get_monetary_account(
                 value_type='IBAN', value=iban)
         except:
             # TODO: Exit nicely
@@ -92,7 +92,7 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
     ctx.obj['args'] = {}
     ctx.obj['args']['iban'] = iban
     ctx.obj['args']['api_key'] = api_key
-    ctx.obj['monetary_account_id'] = monetary_account_id
+    ctx.obj['monetary_account'] = monetary_account
     ctx.obj['currency'] = currency
 
 

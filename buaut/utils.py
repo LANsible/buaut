@@ -1,5 +1,5 @@
 # Typehinting
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 import re
 import validators
@@ -10,8 +10,9 @@ from bunq.sdk.model.generated import endpoint, object_
 from bunq.sdk.exception import BunqException
 
 
-def get_monetary_account_id(value_type: str, value: str) -> int:
-    """Get account_id with api types
+def get_monetary_account(value_type: str, value: str) -> Union[endpoint.MonetaryAccountBank,
+    endpoint.MonetaryAccountJoint, endpoint.MonetaryAccountLight, endpoint.MonetaryAccountSavings]:
+    """Get account with api types
 
     Args:
         type (str): Possible values: IBAN, EMAIL, PHONE_NUMBER
@@ -35,7 +36,7 @@ def get_monetary_account_id(value_type: str, value: str) -> int:
                     monetaryaccount.MonetaryAccountSavings
         for alias in account.alias:
             if alias.type_ == value_type and alias.value == value:
-                return account.id_
+                return account
 
     raise ValueError
 
