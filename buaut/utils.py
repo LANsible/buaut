@@ -122,8 +122,8 @@ def get_payment_object(event: endpoint.Payment) -> endpoint.Payment:
     return payment.value
 
 
-def convert_to_valid_amount(amount) -> str:
-    """Convert any datatype to a valid amount (xx.xx)
+def convert_to_amount(amount, currency: str) -> object_.Amount:
+    """Convert any datatype to a Amount object
 
     Args:
         amount (any): Amount to convert
@@ -132,7 +132,7 @@ def convert_to_valid_amount(amount) -> str:
         str: Amount in valid currency string
     """
     # Source: https://stackoverflow.com/a/6539677
-    return "{0:.2f}".format(amount)
+    return object_.Amount("{0:.2f}".format(amount), currency)
 
 
 def convert_comma_seperated_to_list(string: str) -> List[str]:
@@ -174,7 +174,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         total_amount_inquired += amount
         # Create request and append to request_inqueries list
         request = endpoint.RequestInquiry(
-            amount_inquired=object_.Amount(convert_to_valid_amount(amount), currency),
+            amount_inquired=convert_to_amount(amount, currency),
             counterparty_alias=object_.Pointer(type_='EMAIL', value=email),
             description=description,
             allow_bunqme=True
@@ -184,14 +184,10 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         request_inqueries.append(request)
 
 
-    # Convert to valid Bunq currency string
-    total_amount_inquired_string: str = convert_to_valid_amount(
-        total_amount_inquired)
-
     # Send the requests to the API to create the requests batch
     endpoint.RequestInquiryBatch.create(
         request_inquiries=request_inqueries,
-        total_amount_inquired=object_.Amount(total_amount_inquired_string, currency),
+        total_amount_inquired=convert_to_amount(total_amount_inquired, currency),
         monetary_account_id=monetary_account_id,
         event_id=event_id
     )
