@@ -6,7 +6,7 @@ import click
 from bunq.sdk.model.generated import endpoint
 from bunq.sdk.model.generated.object_ import Pointer, Amount
 
-from buaut import helpers
+from buaut import utils
 
 
 @click.command()
@@ -35,7 +35,7 @@ def request(ctx, get: List[Tuple[str, float]], description: str = "Made by Buaut
     monetary_account_id: int = ctx.obj.get('monetary_account_id')
     currency: str = ctx.obj.get('currency')
 
-    helpers.create_request_batch(
+    utils.create_request_batch(
         monetary_account_id=monetary_account_id,
         requests=get,
         description=description,

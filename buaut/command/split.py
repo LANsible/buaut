@@ -8,7 +8,7 @@ from bunq.sdk.client import Pagination
 from bunq.sdk.exception import BunqException
 from bunq.sdk.model.generated import endpoint, object_
 
-from buaut import helpers
+from buaut import utils
 
 
 @click.command()
@@ -52,14 +52,14 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
     includes_list: List[str] = []
 
     if includes:
-        includes_list = helpers.convert_comma_seperated_to_list(includes)
+        includes_list = utils.convert_comma_seperated_to_list(includes)
     if excludes:
-        excludes_list = helpers.convert_comma_seperated_to_list(excludes)
+        excludes_list = utils.convert_comma_seperated_to_list(excludes)
 
     # Get all events
     # NOTE: Using events since we need to pass event_id to the requestInquiry
     # to get a correct reference
-    payment_events: List[endpoint.Event] = helpers.get_events(
+    payment_events: List[endpoint.Event] = utils.get_events(
         monetary_account_id=monetary_account_id,
         types=["Payment"],
         includes=includes_list,
@@ -70,7 +70,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
     requests: List[Tuple[str, float]] = []
     for event in payment_events:
         # Get payment object to workaround bug
-        payment = helpers.get_payment_object(event.object_.Payment)
+        payment = utils.get_payment_object(event.object_.Payment)
 
         # Check if it is a sent payment (afschrijving), amount must be negative
         # Check if the payment has been split already
@@ -99,7 +99,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
             requests.append((e, amount))
 
         # Create request batch for payment
-        helpers.create_request_batch(
+        utils.create_request_batch(
             monetary_account_id=monetary_account_id,
             requests=requests,
             description=str(description),

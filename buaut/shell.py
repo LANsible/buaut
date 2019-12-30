@@ -9,7 +9,7 @@ import click
 from buaut import command
 from bunq.sdk.context import ApiContext, BunqContext, ApiEnvironmentType
 
-from buaut import helpers
+from buaut import utils
 
 
 @click.group()
@@ -78,7 +78,7 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
     if validators.iban(iban):
         try:
             # Set monetary_account_id
-            monetary_account_id: int = helpers.get_monetary_account_id(
+            monetary_account_id: int = utils.get_monetary_account_id(
                 value_type='IBAN', value=iban)
         except:
             # TODO: Exit nicely
