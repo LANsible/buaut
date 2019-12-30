@@ -99,8 +99,8 @@ def get_events(monetary_account_id: int, types: Optional[List[str]], includes: O
                 for t in types:
                   a = getattr(e.object_, t.capitalize(), '')  # use capitilize since API objects are CamelCase
                   # Only insert if of desired type
-                  # NOTE: uses insert no mitigate reversing the events
-                  if a: result.insert(e)
+                  # NOTE: uses insert to mitigate reversing the events
+                  if a: result.insert(0, e)
 
     except StopIteration: return result
 
