@@ -56,161 +56,55 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
     if excludes:
         excludes_list = helpers.convert_comma_seperated_to_list(excludes)
 
-    # Get all unsplit events
+    # Get all events
     # NOTE: Using events since we need to pass event_id to the requestInquiry
     # to get a correct reference
-    unsplit_events: List[endpoint.Event] = get_all_unsplit_events(
+    payment_events: List[endpoint.Event] = helpers.get_events(
         monetary_account_id=monetary_account_id,
+        types=["Payment"],
         includes=includes_list,
         excludes=excludes_list,
         end_date=start)
 
-    if unsplit_events:
-        # Create new list of tuples to fill with amounts
-        requests: List[Tuple[str, float]] = []
-        for event in unsplit_events:
-            # Split the bill!
-            payment = get_payment_object(event.object_.Payment)
+    # Create new list of tuples to fill with amounts
+    requests: List[Tuple[str, float]] = []
+    for event in payment_events:
+        # Get payment object to workaround bug
+        payment = helpers.get_payment_object(event.object_.Payment)
 
-            # Convert to positive
-            amount_to_split: float = float(payment.amount.value) * -1
-            description: dict = {
-                'id': payment.id_,
-                'from': payment.counterparty_alias.label_monetary_account.display_name,
-                'description': payment.description,
-                'created': payment.created
-            }
+        # Check if it is a sent payment (afschrijving), amount must be negative
+        # Check if the payment has been split already
+        if float(payment.amount.value) > 0 or payment.request_reference_split_the_bill:
+          continue
 
-            # Create requests based on percentage or amount
-            for e, a in get:
-                if '%' in a:
-                    normalized_percentage: float = float(a) / 100
-                    # Calculate amount to request
-                    amount: float = amount_to_split * normalized_percentage
-                else:
-                    amount: float = float(a)
+        # Convert to positive
+        amount_to_split: float = float(payment.amount.value) * -1
+        description: dict = {
+            'id': payment.id_,
+            'from': payment.counterparty_alias.label_monetary_account.display_name,
+            'description': payment.description,
+            'created': payment.created
+        }
 
-                requests.append((e, amount))
-
-            # Create request batch for payment
-            helpers.create_request_batch(
-                monetary_account_id=monetary_account_id,
-                requests=requests,
-                description=str(description),
-                currency=currency,
-                event_id=event.id_
-            )
-            # Request sent so empty requests
-            requests = []
-    else:
-        exit(0)
-
-
-def get_all_unsplit_events(
-        monetary_account_id: int, includes: List[str], excludes: List[str], end_date: datetime.datetime
-    ) -> List[endpoint.Event]:
-    """Get all unsplit payments for a certain account
-
-    Args:
-        monetary_account_id (int): Monetary account id
-
-    Returns:
-        List[Payment]: List of unsplit bunq payments
-    """
-
-    events: List[endpoint.Event] = []
-    unsplit_events: List[endpoint.Event] = []
-
-    # Loop until we return
-    while True:
-        # Check if first iteration (unsplit_payments empty)
-        if not events:
-            # We will loop over the payments in batches of 50
-            pagination = Pagination()
-            pagination.count = 50
-            params = pagination.url_params_count_only
-        else:
-            # When there is already a paged request, you can get the next page from it, no need to create it ourselfs:
-            try:
-                params = events.pagination.url_params_previous_page
-            except BunqException:
-                break
-
-        # Add parameters to only list for current monetary_account_id
-        params['monetary_account_id'] = monetary_account_id
-        params['display_user_event'] = 'false'
-
-        # Get events
-        events = endpoint.Event.list(
-            params=params,
-        ).value
-
-        # Filter out all non relevant events
-        included_events: List[endpoint.Event] = filter_excluded_events(
-            events=events, includes=includes, excludes=excludes)
-
-        for e in included_events:
-            if datetime.datetime.strptime(e.created, '%Y-%m-%d %H:%M:%S.%f') < end_date:
-                # Break the loop since this is before the end_date
-                break
-
-            if e.object_.Payment:
-                payment = get_payment_object(e.object_.Payment)
-
-                # Check if it is a sent payment (afschrijving), amount must be negative
-                if payment.sub_type == "PAYMENT" and float(payment.amount.value) < 0:
-                    # Check if the payment has been split
-                    if payment.request_reference_split_the_bill:
-                        continue
-                    else:
-                        # Append payment to list to return
-                        unsplit_events.append(e)
-
-        # Return payment in need of splitting
-        return unsplit_events
-
-
-def filter_excluded_events(events: List[endpoint.Event], includes: List[str], excludes: List[str]) -> List[endpoint.Event]:
-    """Filter all excluded payments
-
-    Args:
-        payments (Payment): Bunq payment object to validate
-
-    Returns:
-        List[endpoint.Payment]: List of included payments
-    """
-    if not includes and not excludes:
-        # No need to check just return
-        return events
-
-    included_events: List[endpoint.Event] = []
-    # Loop payments to filter
-    for e in events:
-        payment = get_payment_object(e.object_.Payment)
-        counterparty = payment.counterparty_alias.label_monetary_account
-
-        # When payment not in excludes it should be included
-        if counterparty.iban not in excludes:
-            # When includes defined check if included, else just append
-            if includes:
-                if counterparty.iban in includes:
-                    included_events.append(payment)
+        # Create requests based on percentage or amount
+        for e, a in get:
+            if a.endswith('%'):
+                # Remove % and make decimal
+                decimal: float = float(a[:-1]) / 100
+                # Calculate amount to request
+                amount: float = amount_to_split * decimal
             else:
-                included_events.append(payment)
+                amount: float = float(a)
 
-    return included_events
+            requests.append((e, amount))
 
-def get_payment_object(event: endpoint.Payment) -> endpoint.Payment:
-    """Workaround for the issue https://github.com/bunq/sdk_python/issues/116
-
-    Args:
-        event (endpoint.Payment): Payment object of Event object so incomplete
-
-    Returns:
-        endpoint.Payment: Payment object but from the payment endpoint
-    """
-    payment = endpoint.Payment.get(
-       payment_id=event.id_,
-       monetary_account_id=event.monetary_account_id
-    )
-    return payment.value
+        # Create request batch for payment
+        helpers.create_request_batch(
+            monetary_account_id=monetary_account_id,
+            requests=requests,
+            description=str(description),
+            currency=currency,
+            event_id=event.id_
+        )
+        # Request sent so empty requests
+        requests = []
