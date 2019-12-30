@@ -8,8 +8,8 @@
           "request": "launch",
           "program": "${workspaceFolder}/venv/bin/buaut",
           // "args" : ["--sandbox", "request", "--get", "sugardaddy@bunq.com", "10", "--get", "sugardaddy@bunq.com", "20", "--description='Test double user'"],
-          // "args" : ["--sandbox", "split", "--get", "sugardaddy@bunq.com", "10%", "--get", "sugardaddy@bunq.com", "20"],
-          "args" : ["--sandbox", "split", "--get", "sugardaddy@bunq.com", "10", "--get", "sugardaddy@bunq.com", "20"],
+          "args" : ["--sandbox", "split", "--start", "28-12-2019", "--get", "sugardaddy@bunq.com", "40%", "--get", "sugardaddy@bunq.com", "60%"],
+          // "args" : ["--sandbox", "split", "--start", "28-12-2019", "--get", "sugardaddy@bunq.com", "20", "--get", "sugardaddy@bunq.com", "20"],
           "console": "integratedTerminal",
           "justMyCode": false
       }
