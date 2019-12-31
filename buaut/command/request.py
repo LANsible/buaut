@@ -2,10 +2,6 @@
 from typing import List, Tuple
 
 import click
-
-from bunq.sdk.model.generated import endpoint
-from bunq.sdk.model.generated.object_ import Pointer, Amount
-
 from buaut import utils
 
 
@@ -13,7 +9,7 @@ from buaut import utils
 @click.pass_context
 @click.option(
     '--get',
-    help='Email and amount (xx.xx) to request',
+    help='Destination and amount (xx.xx) to request',
     required=True,
     multiple=True,
     type=(str, float)

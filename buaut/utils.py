@@ -122,6 +122,32 @@ def get_payment_object(event: endpoint.Payment) -> endpoint.Payment:
     return payment.value
 
 
+def convert_to_pointer(input: str) -> object_.Pointer:
+    """Convert input to Pointer
+
+    Args:
+        input (str): email, iban or phonenumber
+
+    Returns:
+        object_.Pointer: converted input
+    """
+    # Split since iban is passed as 'NL92BUNQ12445345,T Test'
+    value = convert_comma_seperated_to_list(input)
+
+    # Determine type and return
+    if validators.email(value[0]):
+        return object_.Pointer(type_="EMAIL", value=value[0])
+    elif validators.iban(value[0]):
+        return object_.Pointer(type_="IBAN", value=value[0], name=value[1])
+    # TODO: implement phonenumber validation in validators
+    elif value[0][1:].isalnum():
+        return object_.Pointer(type_="PHONE_NUMBER", value=value[0])
+    else:
+        # TODO: Create some logging class and exit with message
+        print("No valid API Type")
+        exit(1)
+
+
 def convert_to_amount(amount, currency: str) -> object_.Amount:
     """Convert any datatype to a Amount object
 
@@ -156,7 +182,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
 
     Args:
         monetary_account_id (int): Account id where the requests are made from
-        requests (List[tuple]): List of tuples containing email and amount
+        requests (List[tuple]): List of tuples containing destination and amount
         description (str): Description for the requests
         currency (str): Currency for the requests in an ISO 4217 formatted currency code
         event_id (int): The ID of the associated event if the request batch was made using 'split the bill'.
@@ -164,22 +190,16 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
     request_inqueries: List[dict] = []
     total_amount_inquired: float = 0
 
-    for email, amount in requests:
-        # Check if valid email
-        # TODO: Create some logging class and exit with message
-        if not validators.email(email):
-            exit(1)
-
+    for d, a in requests:
         # Add amount to total
-        total_amount_inquired += amount
+        total_amount_inquired += a
         # Create request and append to request_inqueries list
         request = endpoint.RequestInquiry(
-            amount_inquired=convert_to_amount(amount, currency),
-            counterparty_alias=object_.Pointer(type_='EMAIL', value=email),
+            amount_inquired=convert_to_amount(a, currency),
+            counterparty_alias=convert_to_pointer(d),
             description=description,
             allow_bunqme=True
         )
-
         # Add request to list
         request_inqueries.append(request)
 

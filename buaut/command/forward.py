@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import click
 
-from bunq.sdk.model.generated import endpoint, object_
+from bunq.sdk.model.generated import endpoint
 
 from buaut import utils
 
@@ -12,9 +12,9 @@ from buaut import utils
 @click.pass_context
 @click.option(
     '--destination',
-    help='IBAN and name where to forward to',
+    help='Destination where to forward to',
     required=True,
-    type=(str, str)
+    type=click.STRING
 )
 @click.option(
     '--description',
@@ -22,7 +22,7 @@ from buaut import utils
     type=click.STRING,
     default='Made by Buaut'
 )
-def forward(ctx, destination: List[Tuple[click.STRING, click.STRING]], description: str):
+def forward(ctx, destination: str, description: str):
     """Forward payments to other IBAN
 
     Args:
@@ -33,6 +33,6 @@ def forward(ctx, destination: List[Tuple[click.STRING, click.STRING]], descripti
     monetary_account: int = ctx.obj.get('monetary_account')
     endpoint.Payment.create(
       amount=monetary_account.balance,
-      counterparty_alias=object_.Pointer(type_='IBAN', value=destination[0], name=destination[1]),
+      counterparty_alias=utils.convert_to_pointer(destination),
       description=description,
     )
