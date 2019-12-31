@@ -5,6 +5,15 @@ buaut split --iban --includes "NL12BUNQ123123123,NL12BUNQ123123123" --excludes "
 buaut --sandbox --iban=<iban> --api-key=<key> request --get sugardaddy@bunq.com 10 --get sugardaddy@bunq.com 20 --description="Test double user"
 ```
 
+All destinations can be specified as:
+
+```
+--get sugardaddy@bunq.me 20
+--get +31611223344 20
+--get "NL43BUNQ1122334455,T User" 20
+
+```
+
 ## Release
 ```
 pip install -r build-requirements.txt
