@@ -7,7 +7,10 @@ import socket
 import click
 
 from buaut import command
-from bunq.sdk.context import ApiContext, BunqContext, ApiEnvironmentType
+from bunq.sdk.exception.bunq_exception import BunqException
+from bunq.sdk.context.api_context import ApiContext
+from bunq.sdk.context.bunq_context import BunqContext
+from bunq.sdk.context.api_environment_type import ApiEnvironmentType
 
 from buaut import utils
 
