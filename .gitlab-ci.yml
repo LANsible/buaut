@@ -14,3 +14,13 @@ stages:
   - test
   - push
   - manifest
+
+# TODO: improve test phase
+test:
+  stage: test
+  tags:
+  - local  # do not run on shared runner
+  - docker
+  script:
+    # Run image to test
+    - docker run -t --tmpfs /tmp:exec ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}
