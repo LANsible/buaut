@@ -5,9 +5,9 @@ import re
 import validators
 import datetime
 
-from bunq.sdk.client import Pagination
+from bunq import Pagination
 from bunq.sdk.model.generated import endpoint, object_
-from bunq.sdk.exception import BunqException
+from bunq.sdk.exception.bunq_exception import BunqException
 
 
 def get_monetary_account(value_type: str, value: str) -> Union[endpoint.MonetaryAccountBank,
