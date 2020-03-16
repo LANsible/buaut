@@ -158,7 +158,7 @@ def convert_to_amount(amount, currency: str) -> object_.Amount:
         str: Amount in valid currency string
     """
     # Source: https://stackoverflow.com/a/6539677
-    return object_.Amount("{0:.2f}".format(amount), currency)
+    return object_.Amount("{0:.2f}".format(float(amount)), currency)
 
 
 def convert_comma_seperated_to_list(string: str) -> List[str]:
