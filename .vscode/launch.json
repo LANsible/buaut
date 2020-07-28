@@ -7,10 +7,10 @@
           "type": "python",
           "request": "launch",
           "program": "${workspaceFolder}/venv/bin/buaut",
-          // "args" : ["--sandbox", "request", "--get", "sugardaddy@bunq.com", "10", "--get", "NL36BUNQ2025332645,S Delacroix", "20", "--get", "+31674407404", "30", "--description='Test double user'"],
+          // "args" : ["--sandbox", "request", "--get", "sugardaddy@bunq.com", "10", "--get", "NL32BUNQ2025313705,R Bowi", "20", "--description='Test double user'"],
           // "args" : ["--sandbox", "split", "--start", "28-12-2019", "--get", "sugardaddy@bunq.com", "40%", "--get", "sugardaddy@bunq.com", "60%"],
           // "args" : ["--sandbox", "split", "--start", "28-12-2019", "--get", "sugardaddy@bunq.com", "20", "--get", "sugardaddy@bunq.com", "20"],
-          "args" : ["--sandbox", "forward", "--destination", "NL36BUNQ2025332645,S Delacroix"],
+          // "args" : ["--sandbox", "forward", "--destination", "NL29BUNQ2205589229,R. Bowi"],
           "console": "integratedTerminal",
           // "justMyCode": false
       }

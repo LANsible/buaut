@@ -71,7 +71,7 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
         else ApiEnvironmentType.PRODUCTION
 
     # Setup Bunq authentication
-    api_context = ApiContext(context, api_key,
+    api_context = ApiContext.create(context, api_key,
                              socket.gethostname())
     api_context.ensure_session_active()
 

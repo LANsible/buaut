@@ -4,6 +4,7 @@ from typing import List, Tuple
 import click
 import validators
 import datetime
+
 from bunq import Pagination
 from bunq.sdk.exception.bunq_exception import BunqException
 from bunq.sdk.model.generated import endpoint, object_

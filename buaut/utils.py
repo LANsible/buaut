@@ -6,12 +6,24 @@ import validators
 import datetime
 
 from bunq import Pagination
-from bunq.sdk.model.generated import endpoint, object_
+from bunq.sdk.model.generated.endpoint import \
+    MonetaryAccountBank, \
+    MonetaryAccountJoint, \
+    MonetaryAccountLight, \
+    MonetaryAccount, \
+    Event, \
+    Payment, \
+    RequestInquiry, \
+    RequestInquiryBatch
+from bunq.sdk.model.generated.object_ import \
+    Amount, \
+    RequestReferenceSplitTheBillAnchorObject, \
+    Pointer
 from bunq.sdk.exception.bunq_exception import BunqException
 
 
-def get_monetary_account(value_type: str, value: str) -> Union[endpoint.MonetaryAccountBank,
-    endpoint.MonetaryAccountJoint, endpoint.MonetaryAccountLight, endpoint.MonetaryAccountSavings]:
+def get_monetary_account(value_type: str, value: str) -> Union[MonetaryAccountBank,
+    MonetaryAccountJoint, MonetaryAccountLight]:
     """Get account with api types
 
     Args:
@@ -26,7 +38,7 @@ def get_monetary_account(value_type: str, value: str) -> Union[endpoint.Monetary
     """
     pagination = Pagination()
     pagination.count = 25  # maximum of accounts
-    monetaryaccount_list = endpoint.MonetaryAccount.list(
+    monetaryaccount_list = MonetaryAccount.list(
         params=pagination.url_params_count_only).value
 
     for monetaryaccount in monetaryaccount_list:
@@ -42,7 +54,7 @@ def get_monetary_account(value_type: str, value: str) -> Union[endpoint.Monetary
 
 
 def get_events(monetary_account_id: int, types: Optional[List[str]], includes: Optional[List[str]],
-      excludes: Optional[List[str]], end_date: Optional[datetime.datetime]) -> List[endpoint.Event]:
+      excludes: Optional[List[str]], end_date: Optional[datetime.datetime]) -> List[Event]:
     """Get events for a certain account
 
     Args:
@@ -53,11 +65,11 @@ def get_events(monetary_account_id: int, types: Optional[List[str]], includes: O
         end_date (datetime.datetime): Date to stop looking for events
 
     Returns:
-        List[endpoint.Event]: List of events
+        List[Event]: List of events
     """
 
-    events: List[endpoint.Event] = []
-    result: List[endpoint.Event] = []
+    events: List[Event] = []
+    result: List[Event] = []
 
     try:
         # Loop until we raise or return
@@ -84,12 +96,12 @@ def get_events(monetary_account_id: int, types: Optional[List[str]], includes: O
             params['display_user_event'] = 'false'
 
             # Get events
-            events = endpoint.Event.list(
+            events = Event.list(
                 params=params,
             ).value
 
             # Filter out all non relevant events
-            included_events: List[endpoint.Event] = _filter_excluded_events(
+            included_events: List[Event] = _filter_excluded_events(
                 events=events, includes=includes, excludes=excludes)
 
             for e in included_events:
@@ -106,49 +118,49 @@ def get_events(monetary_account_id: int, types: Optional[List[str]], includes: O
     except StopIteration: return result
 
 
-def get_payment_object(event: endpoint.Payment) -> endpoint.Payment:
+def get_payment_object(event: Payment) -> Payment:
     """Workaround for the issue https://github.com/bunq/sdk_python/issues/116
 
     Args:
-        event (endpoint.Payment): Payment object of Event object so incomplete
+        event (Payment): Payment object of Event object so incomplete
 
     Returns:
-        endpoint.Payment: Payment object but from the payment endpoint
+        Payment: Payment object but from the payment endpoint
     """
-    payment = endpoint.Payment.get(
+    payment = Payment.get(
        payment_id=event.id_,
        monetary_account_id=event.monetary_account_id
     )
     return payment.value
 
 
-def convert_to_pointer(input: str) -> object_.Pointer:
+def convert_to_pointer(input: str) -> Pointer:
     """Convert input to Pointer
 
     Args:
         input (str): email, iban or phonenumber
 
     Returns:
-        object_.Pointer: converted input
+        Pointer: converted input
     """
     # Split since iban is passed as 'NL92BUNQ12445345,T Test'
     value = convert_comma_seperated_to_list(input)
 
     # Determine type and return
     if validators.email(value[0]):
-        return object_.Pointer(type_="EMAIL", value=value[0])
+        return Pointer(type_="EMAIL", value=value[0])
     elif validators.iban(value[0]):
-        return object_.Pointer(type_="IBAN", value=value[0], name=value[1])
+        return Pointer(type_="IBAN", value=value[0], name=value[1])
     # TODO: implement phonenumber validation in validators
-    elif value[0][1:].isalnum():
-        return object_.Pointer(type_="PHONE_NUMBER", value=value[0])
+    elif value[0][1:].isdigit(): # removes + sign from phonenumber
+        return Pointer(type_="PHONE_NUMBER", value=value[0])
     else:
         # TODO: Create some logging class and exit with message
         print("No valid API Type")
         exit(1)
 
 
-def convert_to_amount(amount, currency: str) -> object_.Amount:
+def convert_to_amount(amount, currency: str) -> Amount:
     """Convert any datatype to a Amount object
 
     Args:
@@ -158,7 +170,7 @@ def convert_to_amount(amount, currency: str) -> object_.Amount:
         str: Amount in valid currency string
     """
     # Source: https://stackoverflow.com/a/6539677
-    return object_.Amount("{0:.2f}".format(amount), currency)
+    return Amount("{0:.2f}".format(amount), currency)
 
 
 def convert_comma_seperated_to_list(string: str) -> List[str]:
@@ -177,7 +189,7 @@ def convert_comma_seperated_to_list(string: str) -> List[str]:
 
 def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str,
                           event_id: int=None,
-                          reference_split_the_bill: object_.RequestReferenceSplitTheBillAnchorObject=None):
+                          reference_split_the_bill: RequestReferenceSplitTheBillAnchorObject=None):
     """Create request batch from a list of requests
 
     Args:
@@ -194,7 +206,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         # Add amount to total
         total_amount_inquired += a
         # Create request and append to request_inqueries list
-        request = endpoint.RequestInquiry(
+        request = RequestInquiry(
             amount_inquired=convert_to_amount(a, currency),
             counterparty_alias=convert_to_pointer(d),
             description=description,
@@ -205,33 +217,40 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
 
 
     # Send the requests to the API to create the requests batch
-    endpoint.RequestInquiryBatch.create(
+    RequestInquiryBatch.create(
         request_inquiries=request_inqueries,
         total_amount_inquired=convert_to_amount(total_amount_inquired, currency),
         monetary_account_id=monetary_account_id,
         event_id=event_id
     )
 
+def create_payment(monetary_account_id: int, amount: Amount, counterparty_alias: Pointer, description: str):
+    Payment.create(
+        monetary_account_id=monetary_account_id,
+        amount=amount,
+        counterparty_alias=counterparty_alias,
+        description=description,
+    )
 
-def _filter_excluded_events(events: List[endpoint.Event], includes: Optional[List[str]], excludes: Optional[List[str]]
-    ) -> List[endpoint.Event]:
+def _filter_excluded_events(events: List[Event], includes: Optional[List[str]], excludes: Optional[List[str]]
+    ) -> List[Event]:
     """Filter all excluded payments
 
     Args:
         payments (Payment): Bunq payment object to validate
 
     Returns:
-        List[endpoint.Payment]: List of included payments
+        List[Payment]: List of included payments
     """
     if not includes and not excludes:
         # No need to check just return
         return events
 
-    result: List[endpoint.Event] = []
+    result: List[Event] = []
     # Loop payments to filter
     for e in events:
         # TODO: make this more generic for non payment events
-        payment = get_payment_object(e.object_.Payment)
+        payment = get_payment_object(e.Payment)
         counterparty = payment.counterparty_alias.label_monetary_account
 
         # When payment not in excludes it should be included

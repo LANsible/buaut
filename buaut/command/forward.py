@@ -31,9 +31,9 @@ def forward(ctx, destination: str, description: str):
         description (str): Description for the request
     """
     monetary_account: int = ctx.obj.get('monetary_account')
-    endpoint.Payment.create(
-      monetary_account_id=monetary_account.id_,
-      amount=monetary_account.balance,
-      counterparty_alias=utils.convert_to_pointer(destination),
-      description=description,
+    utils.create_payment(
+        monetary_account_id=monetary_account.id_,
+        amount=monetary_account.balance,
+        counterparty_alias=utils.convert_to_pointer(destination),
+        description=description
     )
