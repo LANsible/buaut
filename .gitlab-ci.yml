@@ -23,4 +23,4 @@ test:
   - docker
   script:
     # Run image to test
-    - docker run -t --tmpfs /tmp:exec ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}
+    - docker run -t --tmpfs /tmp:exec ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}-amd64
