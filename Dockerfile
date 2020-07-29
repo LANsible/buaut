@@ -28,9 +28,6 @@ COPY . /buaut
 RUN pip3 install -r /buaut/requirements.txt && \
     pip3 install pyinstaller scons && \
     pip3 install -e /buaut && \
-    # Needed for scons:
-    # /usr/bin/env: python: No such file or directory
-    update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && \
     CC=/usr/bin/musl-gcc pip3 install https://github.com/JonathonReinhart/staticx/archive/master.zip
 
 WORKDIR /buaut
@@ -40,8 +37,8 @@ RUN pyinstaller --strip --onefile /usr/local/bin/buaut && \
         --strip \
         -l /lib/x86_64-linux-gnu/libnss_dns.so.2 \
         -l /lib/x86_64-linux-gnu/libresolv.so.2 \
-        dist/buaut dist/buaut_static
-
+        dist/buaut dist/buaut_static && \
+    chmod +x dist/buaut_static
 
 #######################################################################################################################
 # Final scratch image
