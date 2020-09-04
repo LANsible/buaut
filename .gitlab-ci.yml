@@ -21,6 +21,9 @@ test:
   tags:
   - local  # do not run on shared runner
   - docker
+  variables:
+    DOCKER_IMAGE_NAME: ${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}
+    DOCKER_IMAGE_TAG: ${CI_COMMIT_SHA}
   script:
     # Run image to test
-    - docker run -t --tmpfs /tmp:exec ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}-amd64
+    - docker run -t --tmpfs /tmp:exec ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}-amd64
