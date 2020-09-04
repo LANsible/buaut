@@ -33,5 +33,5 @@ export BUAUT_API_KEY=<key>
 # Docker
 
 ```
-docker run -t --tmpfs /tmp:exec LANsible:buaut
+docker run -t --tmpfs /tmp:exec lansible:buaut
 ```

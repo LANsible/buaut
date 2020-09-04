@@ -1,0 +1,29 @@
+---
+variables:
+  DOCKER_IMAGE_NAME: lansible/buaut
+
+include:
+  - template: Container-Scanning.gitlab-ci.yml
+  - remote: https://raw.githubusercontent.com/LANsible/gitlab-includes/master/docker-login.yml
+  - remote: https://raw.githubusercontent.com/LANsible/gitlab-includes/master/docker-build.yml
+  - remote: https://raw.githubusercontent.com/LANsible/gitlab-includes/master/sast-cis-benchmark.yml
+
+stages:
+  - lint
+  - build
+  - test
+  - push
+  - manifest
+
+# TODO: improve test phase
+test:
+  stage: test
+  tags:
+  - local  # do not run on shared runner
+  - docker
+  variables:
+    DOCKER_IMAGE_NAME: ${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_SLUG}
+    DOCKER_IMAGE_TAG: ${CI_COMMIT_SHA}
+  script:
+    # Run image to test
+    - docker run -t --tmpfs /tmp:exec ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}-amd64
