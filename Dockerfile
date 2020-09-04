@@ -24,11 +24,14 @@ RUN apt-get update && \
       # https://github.com/JonathonReinhart/staticx#from-source
       musl-tools
 
+# Set musl as default
+ENV CC=/usr/bin/musl-gcc
+
 COPY . /buaut
 RUN pip3 install -r /buaut/requirements.txt && \
     pip3 install pyinstaller scons && \
     pip3 install -e /buaut && \
-    CC=/usr/bin/musl-gcc pip3 install https://github.com/JonathonReinhart/staticx/archive/master.zip
+    pip3 install https://github.com/JonathonReinhart/staticx/archive/master.zip
 
 WORKDIR /buaut
 # Adds libnss and libresolv to binary since these are used for DNS resolving by Python
@@ -50,8 +53,11 @@ ENV LC_ALL=C.UTF-8 \
 # Add description
 LABEL org.label-schema.description="BuAut, Bunq Automation for an easier life :)"
 
+# TODO: Look why this breaks:
+# "Failed to open /proc/self/exe: Permission denied"
 # Copy the unprivileged user
-COPY --from=builder /etc_passwd /etc/passwd
+# COPY --from=builder /etc_passwd /etc/passwd
+COPY --from=builder /etc/passwd /etc/passwd
 
 # Add locale otherwise Click does not work:
 # https://click.palletsprojects.com/en/7.x/python3/
@@ -63,6 +69,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Add compiled binary
 COPY --from=builder /buaut/dist/buaut_static /buaut
 
-USER buaut
+# TODO: enable when user is available again
+# USER buaut
 ENTRYPOINT ["/buaut"]
 CMD ["--help"]
