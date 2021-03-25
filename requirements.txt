@@ -2,5 +2,5 @@ pbr == 5.5.0  # Needed for pbr.version
 setuptools == 50.1.0  # Needed to workaround https://github.com/pyinstaller/pyinstaller/issues/4984
 bunq-sdk == 1.14.1
 click == 7.1.2
-pyyaml == 5.3.1
+pyyaml == 5.4
 validators == 0.18.1
