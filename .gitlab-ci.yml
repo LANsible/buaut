@@ -26,4 +26,4 @@ test:
     DOCKER_IMAGE_TAG: ${CI_COMMIT_SHA}
   script:
     # Run image to test
-    - docker run -t --tmpfs /tmp:exec ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}-amd64
+    - docker run -t --tmpfs /tmp:exec ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
