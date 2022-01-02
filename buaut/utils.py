@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional, Union
 import re
 import validators
 import datetime
+import tenacity
 
 from bunq import Pagination
 from bunq.sdk.model.generated.endpoint import \
@@ -23,7 +24,7 @@ from bunq.sdk.exception.bunq_exception import BunqException
 
 
 def get_monetary_account(value_type: str, value: str) -> Union[MonetaryAccountBank,
-    MonetaryAccountJoint, MonetaryAccountLight]:
+                                                               MonetaryAccountJoint, MonetaryAccountLight]:
     """Get account with api types
 
     Args:
@@ -43,33 +44,33 @@ def get_monetary_account(value_type: str, value: str) -> Union[MonetaryAccountBa
 
     for monetaryaccount in monetaryaccount_list:
         account = monetaryaccount.MonetaryAccountBank or \
-                    monetaryaccount.MonetaryAccountJoint or \
-                    monetaryaccount.MonetaryAccountLight or \
-                    monetaryaccount.MonetaryAccountSavings
+            monetaryaccount.MonetaryAccountJoint or \
+            monetaryaccount.MonetaryAccountLight or \
+            monetaryaccount.MonetaryAccountSavings
         for alias in account.alias:
             if alias.type_ == value_type and alias.value == value:
                 return account
 
     raise ValueError
 
-
-def get_events(monetary_account_id: int, types: Optional[List[str]], includes: Optional[List[str]],
-      excludes: Optional[List[str]], end_date: Optional[datetime.datetime]) -> List[Event]:
+@tenacity.retry(wait=tenacity.wait_fixed(2))
+def get_payments(monetary_account_id: int, includes: Optional[List[str]],
+                 excludes: Optional[List[str]], start_date: Optional[datetime.datetime], end_date: Optional[datetime.datetime]) -> List[Payment]:
     """Get events for a certain account
 
     Args:
         monetary_account_id (int): Monetary account id
-        types (List[str]): API types to filter from events
         includes (List[str]): IBAN number to include
         excludes (List[str]): IBAN numbers to exclude
-        end_date (datetime.datetime): Date to stop looking for events
+        start_date (datetime.datetime): Date to start looking for payments
+        end_date (datetime.datetime): Date to stop looking for payments
 
     Returns:
         List[Event]: List of events
     """
 
-    events: List[Event] = []
-    result: List[Event] = []
+    events: List[Payment] = []
+    result: List[Payment] = []
 
     try:
         # Loop until we raise or return
@@ -91,47 +92,20 @@ def get_events(monetary_account_id: int, types: Optional[List[str]], includes: O
                     # Break the loop, there is no more to process
                     raise StopIteration
 
-            # Add parameters to only list for current monetary_account_id
-            params['monetary_account_id'] = monetary_account_id
-            params['display_user_event'] = 'false'
-
             # Get events
-            events = Event.list(
+            payments = Payment.list(
                 params=params,
+                monetary_account_id=monetary_account_id
             ).value
 
             # Filter out all non relevant events
-            included_events: List[Event] = _filter_excluded_events(
-                events=events, includes=includes, excludes=excludes)
-
-            for e in included_events:
-                if datetime.datetime.strptime(e.created, '%Y-%m-%d %H:%M:%S.%f') < end_date:
-                    # Break the outer loop since this is before the end_date
-                    raise StopIteration
-
-                for t in types:
-                  a = getattr(e.object_, t.capitalize(), '')  # use capitilize since API objects are CamelCase
-                  # Only insert if of desired type
-                  # NOTE: uses insert to mitigate reversing the events
-                  if a: result.insert(0, e)
-
-    except StopIteration: return result
+            payments = _filter_created_date(
+                events=payments, start_date=start_date, end_date=end_date)
+            return _filter_excluded_payments(payments=payments, includes=includes, excludes=excludes)
 
 
-def get_payment_object(event: Payment) -> Payment:
-    """Workaround for the issue https://github.com/bunq/sdk_python/issues/116
-
-    Args:
-        event (Payment): Payment object of Event object so incomplete
-
-    Returns:
-        Payment: Payment object but from the payment endpoint
-    """
-    payment = Payment.get(
-       payment_id=event.id_,
-       monetary_account_id=event.monetary_account_id
-    )
-    return payment.value
+    except StopIteration:
+        return result
 
 
 def convert_to_pointer(input: str) -> Pointer:
@@ -152,7 +126,7 @@ def convert_to_pointer(input: str) -> Pointer:
     elif validators.iban(value[0]):
         return Pointer(type_="IBAN", value=value[0], name=value[1])
     # TODO: implement phonenumber validation in validators
-    elif value[0][1:].isdigit(): # removes + sign from phonenumber
+    elif value[0][1:].isdigit():  # removes + sign from phonenumber
         return Pointer(type_="PHONE_NUMBER", value=value[0])
     else:
         # TODO: Create some logging class and exit with message
@@ -186,10 +160,9 @@ def convert_comma_seperated_to_list(string: str) -> List[str]:
     pattern = re.compile(r"^\s+|\s*,\s*|\s+$")
     return pattern.split(string)
 
-
+@tenacity.retry(wait=tenacity.wait_fixed(2))
 def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str,
-                          event_id: int=None,
-                          reference_split_the_bill: RequestReferenceSplitTheBillAnchorObject=None):
+                         event_id: int = None):
     """Create request batch from a list of requests
 
     Args:
@@ -215,15 +188,16 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         # Add request to list
         request_inqueries.append(request)
 
-
     # Send the requests to the API to create the requests batch
     RequestInquiryBatch.create(
         request_inquiries=request_inqueries,
-        total_amount_inquired=convert_to_amount(total_amount_inquired, currency),
+        total_amount_inquired=convert_to_amount(
+            total_amount_inquired, currency),
         monetary_account_id=monetary_account_id,
         event_id=event_id
     )
 
+@tenacity.retry(wait=tenacity.wait_fixed(2))
 def create_payment(monetary_account_id: int, amount: Amount, counterparty_alias: Pointer, description: str):
     Payment.create(
         monetary_account_id=monetary_account_id,
@@ -232,8 +206,9 @@ def create_payment(monetary_account_id: int, amount: Amount, counterparty_alias:
         description=description,
     )
 
-def _filter_excluded_events(events: List[Event], includes: Optional[List[str]], excludes: Optional[List[str]]
-    ) -> List[Event]:
+
+def _filter_excluded_payments(payments: List[Payment], includes: Optional[List[str]], excludes: Optional[List[str]]
+                              ) -> List[Payment]:
     """Filter all excluded payments
 
     Args:
@@ -244,13 +219,11 @@ def _filter_excluded_events(events: List[Event], includes: Optional[List[str]], 
     """
     if not includes and not excludes:
         # No need to check just return
-        return events
+        return payments
 
-    result: List[Event] = []
+    result: List[Payment] = []
     # Loop payments to filter
-    for e in events:
-        # TODO: make this more generic for non payment events
-        payment = get_payment_object(e.Payment)
+    for payment in payments:
         counterparty = payment.counterparty_alias.label_monetary_account
 
         # When payment not in excludes it should be included
@@ -261,5 +234,34 @@ def _filter_excluded_events(events: List[Event], includes: Optional[List[str]], 
                     result.append(payment)
             else:
                 result.append(payment)
+
+    return result
+
+
+def _filter_created_date(events: List[Payment], start_date: datetime.datetime, end_date: datetime.datetime) -> List[Payment]:
+    """Filter Bunq object on created date
+
+    Args:
+        events (List[Payment]): List of object to filter
+        start_date (datetime.datetime):
+        end_date (datetime.datetime):
+
+    Returns:
+        List[Payment]: [description]
+    """
+    if not start_date and not end_date:
+        # No need to check just return
+        return events
+
+    result: List[Payment] = []
+    # Loop objects to filter
+    for event in events:
+        # example '2020-09-04 13:34:59.712731'
+        date: datetime = datetime.datetime.strptime(
+            event.created, "%Y-%m-%d %H:%M:%S.%f")
+
+        # When payment not in excludes it should be included
+        if date <= start_date and date > end_date:
+            result.append(event)
 
     return result

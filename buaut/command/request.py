@@ -18,9 +18,10 @@ from buaut import utils
     '--description',
     help='Description for the request',
     required=False,
+    default= "Made by Buaut",
     type=click.STRING
 )
-def request(ctx, get: List[Tuple[str, float]], description: str = "Made by Buaut"):
+def request(ctx, get: List[Tuple[str, float]], description: str):
     """Request on or more user for one or more amount
 
     Args:
