@@ -32,6 +32,8 @@ export BUAUT_API_KEY=<key>
 
 # Docker
 
+Needed since /dev/shm ins't mounted as exec
+https://github.com/pyinstaller/pyinstaller/issues/4548
 ```
 docker run -t --tmpfs /tmp:exec lansible:buaut
 ```

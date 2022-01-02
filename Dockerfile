@@ -1,75 +1,75 @@
-ARG ARCHITECTURE
 #######################################################################################################################
 # Package binary with Pyinstaller
 #######################################################################################################################
 # Using non alpine for glibc which pyinstaller needs
-FROM multiarch/debian-debootstrap:${ARCHITECTURE}-bullseye as builder
+FROM alpine:3.15 as builder
 
 # Add unprivileged user
 RUN echo "buaut:x:1000:1000:buaut:/:" > /etc_passwd
 
-RUN apt-get update && \
-    apt-get install -y \
+RUN apk add --no-cache \
       python3-dev \
-      python3-pip \
-      build-essential \
-      ca-certificates \
+      py3-pip \
+      build-base \
       # Needed for pbr version since not released to pypi
       git \
-      # Optional for pyinstaller
-      upx \
+      # Needed for both staticx and pyinstaller
+      binutils \
       # Required for staticx
       patchelf \
-      # Smaller better binaries:
-      # https://github.com/JonathonReinhart/staticx#from-source
-      musl-tools
-
-# Set musl as default
-ENV CC=/usr/bin/musl-gcc
+      # Needed for pyinstaller
+      zlib-dev
 
 COPY . /buaut
+# Smaller better binaries:
+# https://github.com/JonathonReinhart/staticx#from-source
 RUN pip3 install -r /buaut/requirements.txt && \
-    pip3 install pyinstaller scons && \
-    pip3 install -e /buaut && \
-    pip3 install https://github.com/JonathonReinhart/staticx/archive/master.zip
+    pip3 install scons staticx && \
+    pip3 install -e /buaut
+
+# 'Install' upx from image since upx isn't available for aarch64 from Alpine
+COPY --from=lansible/upx /usr/bin/upx /usr/bin/upx
+
+# Build bootloader for alpine
+# Source: https://github.com/six8/pyinstaller-alpine/blob/develop/python3.7.Dockerfile#L26
+RUN git clone --depth 1 --single-branch --branch v4.7 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
+    && cd /tmp/pyinstaller/bootloader \
+    && CFLAGS="-Wno-stringop-overflow -Wno-stringop-truncation" python3 ./waf configure --no-lsb all \
+    && pip3 install .. \
+    && rm -Rf /tmp/pyinstaller
 
 WORKDIR /buaut
-# Adds libnss and libresolv to binary since these are used for DNS resolving by Python
-RUN pyinstaller --strip --onefile /usr/local/bin/buaut && \
-    staticx \
-        --strip \
-        -l /lib/x86_64-linux-gnu/libnss_dns.so.2 \
-        -l /lib/x86_64-linux-gnu/libresolv.so.2 \
-        dist/buaut dist/buaut_static && \
-    chmod +x dist/buaut_static
+RUN pyinstaller --strip --onefile /usr/bin/buaut
+
 
 #######################################################################################################################
 # Final scratch image
 #######################################################################################################################
 FROM scratch
-ENV LC_ALL=C.UTF-8 \
-    LANG=C.UTF-8
 
 # Add description
 LABEL org.label-schema.description="BuAut, Bunq Automation for an easier life :)"
 
-# TODO: Look why this breaks:
-# "Failed to open /proc/self/exe: Permission denied"
 # Copy the unprivileged user
-# COPY --from=builder /etc_passwd /etc/passwd
-COPY --from=builder /etc/passwd /etc/passwd
-
-# Add locale otherwise Click does not work:
-# https://click.palletsprojects.com/en/7.x/python3/
-COPY --from=builder /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
+COPY --from=builder /etc_passwd /etc/passwd
 
 # Add ssl certificates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Add compiled binary
-COPY --from=builder /buaut/dist/buaut_static /buaut
+# Copy needed libs(libstdc++.so, libgcc_s.so) for nodejs since it is partially static
+# Copy linker to be able to use them (lib/ld-musl)
+COPY --from=builder \
+    /usr/lib/libstdc++.so.6 \
+    /usr/lib/libgcc_s.so.1 \
+    /usr/lib/
+COPY --from=builder \
+    /lib/ld-musl-*.so.1 \
+    /lib/libz.so.1 \
+    /lib/
 
-# TODO: enable when user is available again
-# USER buaut
+# Add compiled binary
+COPY --from=builder /buaut/dist/buaut /buaut
+
+USER buaut
 ENTRYPOINT ["/buaut"]
 CMD ["--help"]

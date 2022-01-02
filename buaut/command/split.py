@@ -4,10 +4,9 @@ from typing import List, Tuple
 import click
 import validators
 import datetime
+import dateutil.relativedelta
 
-from bunq import Pagination
-from bunq.sdk.exception.bunq_exception import BunqException
-from bunq.sdk.model.generated import endpoint, object_
+from bunq.sdk.model.generated.endpoint import Payment  # just here for the typehint
 
 from buaut import utils
 
@@ -22,6 +21,19 @@ from buaut import utils
     type=(click.STRING, click.STRING)
 )
 @click.option(
+    '--period',
+    help='How far to split back in time from the current day',
+    required=True,
+    type=click.Choice(['daily', 'weekly', 'monthly'], case_sensitive=False)
+)
+@click.option(
+    '--start',
+    help='Day to start the period from, if undefined uses today',
+    # formats are                1970-02-01, 01-02-1970, 02-01-1970, 70-02-01,   01-02-70,   02-01-70
+    type=click.DateTime(formats=['%Y-%m-%d', '%d-%m-%Y', '%m-%d-%Y', '%y-%m-%d', '%d-%m-%y', '%m-%d-%y']),
+    default=str(datetime.date.today())
+)
+@click.option(
     '--includes',
     help='IBAN numbers to include',
     type=click.STRING
@@ -31,18 +43,15 @@ from buaut import utils
     help='IBAN numbers to exclude',
     type=click.STRING
 )
-@click.option(
-    '--start',
-    help='Date from when should be split',
-    # formats are                1970-02-01, 01-02-1970, 02-01-1970, 70-02-01,   01-02-70,   02-01-70
-    type=click.DateTime(formats=['%Y-%m-%d', '%d-%m-%Y', '%m-%d-%Y', '%y-%m-%d', '%d-%m-%y', '%m-%d-%y'])
-)
-def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STRING, excludes: click.STRING, start: datetime):
-    """Split payments to certain users
+def split(ctx, get: List[Tuple[click.STRING, click.STRING]], period: click.Choice, start: click.DateTime,
+    includes: click.STRING, excludes: click.STRING):
+    """Split payments to certain users works from newest to oldest
 
     Args:
         ctx ([type]): Click object containing the arguments from global
         get ([tuple]): List of users to request from
+        period (click.STRING): How far to split back in time (monthly, weekly, daily)
+        start (click.DateTime): Day to start the period from, if undefined uses today
         includes (click.STRING): Comma seperated string containing includes
         excludes (click.STRING): Comma seperated string containing excludes
     """
@@ -57,24 +66,33 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
     if excludes:
         excludes_list = utils.convert_comma_seperated_to_list(excludes)
 
+    if period == "daily":
+        end_date = start - dateutil.relativedelta.relativedelta(days=1)
+    elif period == "weekly":
+        end_date = start - dateutil.relativedelta.relativedelta(weeks=1)
+    elif period == "monthly":
+        end_date = start - dateutil.relativedelta.relativedelta(months=1)
+    else:
+        # TODO: Exit nicely
+        exit(1)
+
     # Get all events
     # NOTE: Using events since we need to pass event_id to the requestInquiry
     # to get a correct reference
-    payment_events: List[endpoint.Event] = utils.get_events(
+    payments: List[Payment] = utils.get_payments(
         monetary_account_id=monetary_account.id_,
-        types=["Payment"],
         includes=includes_list,
         excludes=excludes_list,
-        end_date=start)
+        start_date=start,
+        end_date=end_date)
 
     # Create new list of tuples to fill with amounts
     requests: List[Tuple[str, float]] = []
-    for event in payment_events:
-        # Get payment object to workaround bug
-        payment = utils.get_payment_object(event.object_.Payment)
-
+    for payment in payments:
         # Check if it is a sent payment (afschrijving), amount must be negative
         # Check if the payment has been split already
+        # TODO: request_reference_split_the_bill is currently None even when there has been a split
+        # https://github.com/bunq/sdk_python/issues/122
         if float(payment.amount.value) > 0 or payment.request_reference_split_the_bill:
           continue
 
@@ -105,7 +123,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], includes: click.STR
             requests=requests,
             description=str(description),
             currency=currency,
-            event_id=event.id_
+            event_id=payment.id_
         )
         # Request sent so empty requests
         requests = []

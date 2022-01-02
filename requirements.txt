@@ -1,6 +1,7 @@
-pbr == 5.5.0  # Needed for pbr.version
-setuptools == 50.1.0  # Needed to workaround https://github.com/pyinstaller/pyinstaller/issues/4984
-bunq-sdk == 1.14.1
-click == 7.1.2
-pyyaml == 5.4
-validators == 0.18.1
+pbr == 5.8.0  # Needed for pbr.version
+setuptools == 60.2.0  # Needed to workaround https://github.com/pyinstaller/pyinstaller/issues/4984
+bunq-sdk == 1.14.18
+click == 8.0.3
+validators == 0.18.2
+tenacity == 8.0.1
+python-dateutil == 2.8.2
