@@ -1,8 +1,7 @@
 #######################################################################################################################
 # Package binary with Pyinstaller
 #######################################################################################################################
-# Using non alpine for glibc which pyinstaller needs
-FROM alpine:3.15 as builder
+FROM alpine:3.17 as builder
 
 # Add unprivileged user
 RUN echo "buaut:x:1000:1000:buaut:/:" > /etc_passwd
@@ -13,34 +12,25 @@ RUN apk add --no-cache \
       build-base \
       # Needed for pbr version since not released to pypi
       git \
-      # Needed for both staticx and pyinstaller
-      binutils \
-      # Required for staticx
-      patchelf \
       # Needed for pyinstaller
-      zlib-dev
+      binutils
 
 COPY . /buaut
-# Smaller better binaries:
-# https://github.com/JonathonReinhart/staticx#from-source
 RUN pip3 install -r /buaut/requirements.txt && \
-    pip3 install scons staticx && \
+    pip3 install pyinstaller && \
     pip3 install -e /buaut
 
 # 'Install' upx from image since upx isn't available for aarch64 from Alpine
+# used by the --strip command of pyinstaller
 COPY --from=lansible/upx /usr/bin/upx /usr/bin/upx
 
-# Build bootloader for alpine
-# Source: https://github.com/six8/pyinstaller-alpine/blob/develop/python3.7.Dockerfile#L26
-RUN git clone --depth 1 --single-branch --branch v4.7 https://github.com/pyinstaller/pyinstaller.git /tmp/pyinstaller \
-    && cd /tmp/pyinstaller/bootloader \
-    && CFLAGS="-Wno-stringop-overflow -Wno-stringop-truncation" python3 ./waf configure --no-lsb all \
-    && pip3 install .. \
-    && rm -Rf /tmp/pyinstaller
-
+# using staticx executable will result in an error:
+# buaut: Failed to open /proc/self/exe: Permission denied
+# There is some magic involved so decided against it
+# https://github.com/pyinstaller/pyinstaller/blob/f8d589f427fb409157f15ad7c0dd3fc4e46ff93c/bootloader/src/pyi_path.c#L298
+# https://github.com/JonathonReinhart/staticx/pull/8
 WORKDIR /buaut
 RUN pyinstaller --strip --onefile /usr/bin/buaut
-
 
 #######################################################################################################################
 # Final scratch image
@@ -53,10 +43,10 @@ LABEL org.label-schema.description="BuAut, Bunq Automation for an easier life :)
 # Copy the unprivileged user
 COPY --from=builder /etc_passwd /etc/passwd
 
-# Add ssl certificates
+# Add ssl certificates for SSL connections to Bunq
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Copy needed libs(libstdc++.so, libgcc_s.so) for nodejs since it is partially static
+# Copy needed libs(libstdc++.so, libgcc_s.so) for for buaut since it just partitally static
 # Copy linker to be able to use them (lib/ld-musl)
 COPY --from=builder \
     /usr/lib/libstdc++.so.6 \
@@ -68,8 +58,8 @@ COPY --from=builder \
     /lib/
 
 # Add compiled binary
-COPY --from=builder /buaut/dist/buaut /buaut
+COPY --from=builder /buaut/dist/buaut /usr/bin/buaut
 
 USER buaut
-ENTRYPOINT ["/buaut"]
+ENTRYPOINT ["/usr/bin/buaut"]
 CMD ["--help"]
