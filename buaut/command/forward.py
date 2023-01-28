@@ -23,7 +23,7 @@ from buaut import utils
     default='Made by Buaut'
 )
 def forward(ctx, destination: str, description: str):
-    """Forward payments to other IBAN
+    """Forward the total of a Bunq account to another IBAN
 
     Args:
         ctx ([type]): Click object containing the arguments from global
