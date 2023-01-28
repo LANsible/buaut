@@ -12,7 +12,12 @@ from buaut import utils
     help='Destination and amount (xx.xx) to request',
     required=True,
     multiple=True,
-    type=(str, float)
+    type=(click.STRING, click.STRING)
+)
+@click.option(
+    '--total',
+    help='Total to request when --get is a percentage',
+    type=(float)
 )
 @click.option(
     '--description',
@@ -21,8 +26,8 @@ from buaut import utils
     default= "Made by Buaut",
     type=click.STRING
 )
-def request(ctx, get: List[Tuple[str, float]], description: str):
-    """Request on or more user for one or more amount
+def request(ctx, get: List[Tuple[click.STRING, click.STRING]], total: float, description: str):
+    """Send a request to one or more Bunq users
 
     Args:
         ctx ([type]): Click object containing the arguments from global
@@ -32,9 +37,28 @@ def request(ctx, get: List[Tuple[str, float]], description: str):
     monetary_account: int = ctx.obj.get('monetary_account')
     currency: str = ctx.obj.get('currency')
 
+    # Create new list of tuples to fill with amounts
+    requests: List[Tuple[str, float]] = []
+    # Create requests based on percentage or amount
+    for e, a in get:
+        if a.endswith('%'):
+            # total required when percentage is given
+            if not total:
+                # TODO: Exit nicely
+                exit(1)
+
+            # Remove % and make decimal
+            decimal: float = float(a[:-1]) / 100
+            # Calculate amount to request
+            amount: float = total * decimal
+        else:
+            amount: float = float(a)
+
+        requests.append((e, amount))
+
     utils.create_request_batch(
         monetary_account_id=monetary_account.id_,
-        requests=get,
+        requests=requests,
         description=description,
         currency=currency
     )
