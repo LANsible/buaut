@@ -1,6 +1,7 @@
 .env
 client_id
 *venv/
+buaut.json
 
 # Artifacts
 __pycache__/

@@ -36,7 +36,7 @@ from buaut import utils
     '--sandbox',
     envvar='BUAUT_SANDBOX',
     is_flag=True,
-    help='Pass when testing against the Bunq sandbox. '
+    help='Pass when testing against the Bunq sandbox.'
     'Can be set as environment variable BUAUT_SANDBOX',
 )
 @click.option(
@@ -46,9 +46,18 @@ from buaut import utils
     default='EUR',
     show_default=True
 )
+@click.option(
+    '--context-path',
+    envvar='BUAUT_CONTEXT_PATH',
+    help='File path to save the ApiContext to, must be kept and re-used to avoid problems'
+    'Can be set as environment variable BUAUT_CONTEXT_PATH',
+    type=click.Path(),
+    default='buaut.json',
+    show_default=True
+)
 @click.version_option(version=pbr.version.VersionInfo('buaut'))
 @click.pass_context
-def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
+def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str, context_path: click.Path):
     """
     \b
      ____                    _
@@ -71,9 +80,13 @@ def main(ctx, iban: str, api_key: str, sandbox: bool, currency: str):
         else ApiEnvironmentType.PRODUCTION
 
     # Setup Bunq authentication
-    api_context = ApiContext.create(context, api_key,
-                             socket.gethostname())
+    try:
+        api_context = ApiContext.restore(path=str(context_path))
+    except:
+        api_context = ApiContext.create(context, api_key, 'buaut')
+
     api_context.ensure_session_active()
+    api_context.save(path=str(context_path))
 
     # Load api context into BunqContext used for subsequent calls
     BunqContext.load_api_context(api_context)
