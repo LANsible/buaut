@@ -76,9 +76,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], period: click.Choic
         # TODO: Exit nicely
         exit(1)
 
-    # Get all events
-    # NOTE: Using events since we need to pass event_id to the requestInquiry
-    # to get a correct reference
+    # Get all payments
     payments: List[Payment] = utils.get_payments(
         monetary_account_id=monetary_account.id_,
         includes=includes_list,
@@ -90,10 +88,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], period: click.Choic
     requests: List[Tuple[str, float]] = []
     for payment in payments:
         # Check if it is a sent payment (afschrijving), amount must be negative
-        # Check if the payment has been split already
-        # TODO: request_reference_split_the_bill is currently None even when there has been a split
-        # https://github.com/bunq/sdk_python/issues/122
-        if float(payment.amount.value) > 0 or payment.request_reference_split_the_bill:
+        if float(payment.amount.value) > 0:
           continue
 
         # Convert to positive
@@ -122,8 +117,7 @@ def split(ctx, get: List[Tuple[click.STRING, click.STRING]], period: click.Choic
             monetary_account_id=monetary_account.id_,
             requests=requests,
             description=str(description),
-            currency=currency,
-            event_id=payment.id_
+            currency=currency
         )
         # Request sent so empty requests
         requests = []

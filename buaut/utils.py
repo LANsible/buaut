@@ -161,8 +161,7 @@ def convert_comma_seperated_to_list(string: str) -> List[str]:
     return pattern.split(string)
 
 @tenacity.retry(wait=tenacity.wait_fixed(2))
-def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str,
-                         event_id: int = None):
+def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str):
     """Create request batch from a list of requests
 
     Args:
@@ -170,7 +169,6 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         requests (List[tuple]): List of tuples containing destination and amount
         description (str): Description for the requests
         currency (str): Currency for the requests in an ISO 4217 formatted currency code
-        event_id (int): The ID of the associated event if the request batch was made using 'split the bill'.
     """
     request_inqueries: List[dict] = []
     total_amount_inquired: float = 0
@@ -193,8 +191,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         request_inquiries=request_inqueries,
         total_amount_inquired=convert_to_amount(
             total_amount_inquired, currency),
-        monetary_account_id=monetary_account_id,
-        event_id=event_id
+        monetary_account_id=monetary_account_id
     )
 
 @tenacity.retry(wait=tenacity.wait_fixed(2))
