@@ -21,6 +21,7 @@ from bunq.sdk.model.generated.object_ import \
     RequestReferenceSplitTheBillAnchorObject, \
     Pointer
 from bunq.sdk.exception.bunq_exception import BunqException
+from bunq.sdk.exception.too_many_requests_exception import TooManyRequestsException
 
 
 def get_monetary_account(value_type: str, value: str) -> Union[MonetaryAccountBank,
@@ -53,7 +54,7 @@ def get_monetary_account(value_type: str, value: str) -> Union[MonetaryAccountBa
 
     raise ValueError
 
-@tenacity.retry(wait=tenacity.wait_fixed(2))
+@tenacity.retry(wait=tenacity.wait_fixed(2), retry=tenacity.retry_if_exception_type(TooManyRequestsException))
 def get_payments(monetary_account_id: int, includes: Optional[List[str]],
                  excludes: Optional[List[str]], start_date: Optional[datetime.datetime], end_date: Optional[datetime.datetime]) -> List[Payment]:
     """Get events for a certain account
@@ -160,7 +161,7 @@ def convert_comma_seperated_to_list(string: str) -> List[str]:
     pattern = re.compile(r"^\s+|\s*,\s*|\s+$")
     return pattern.split(string)
 
-@tenacity.retry(wait=tenacity.wait_fixed(2))
+@tenacity.retry(wait=tenacity.wait_fixed(2), retry=tenacity.retry_if_exception_type(TooManyRequestsException))
 def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, float]], description: str, currency: str):
     """Create request batch from a list of requests
 
@@ -194,7 +195,7 @@ def create_request_batch(monetary_account_id: int, requests: List[Tuple[str, flo
         monetary_account_id=monetary_account_id
     )
 
-@tenacity.retry(wait=tenacity.wait_fixed(2))
+@tenacity.retry(wait=tenacity.wait_fixed(2), retry=tenacity.retry_if_exception_type(TooManyRequestsException))
 def create_payment(monetary_account_id: int, amount: Amount, counterparty_alias: Pointer, description: str):
     Payment.create(
         monetary_account_id=monetary_account_id,
