@@ -22,15 +22,15 @@ from buaut import utils
 )
 @click.option(
     '--period',
-    help='How far to split back in time from the current day',
+    help='How far to split back in time from the start parameter',
     required=True,
     type=click.Choice(['daily', 'weekly', 'monthly'], case_sensitive=False)
 )
 @click.option(
     '--start',
-    help='Day to start the period from, if undefined uses today',
-    # formats are                1970-02-01, 01-02-1970, 02-01-1970, 70-02-01,   01-02-70,   02-01-70
-    type=click.DateTime(formats=['%Y-%m-%d', '%d-%m-%Y', '%m-%d-%Y', '%y-%m-%d', '%d-%m-%y', '%m-%d-%y']),
+    help='Day to start the period from in YYYY-MM-DD format, defaults to today',
+    # formats are                1970-02-01, 70-02-01
+    type=click.DateTime(formats=['%Y-%m-%d', '%y-%m-%d']),
     default=str(datetime.date.today())
 )
 @click.option(
