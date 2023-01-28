@@ -9,7 +9,9 @@ from buaut import utils
 @click.pass_context
 @click.option(
     '--get',
-    help='Destination and amount (xx.xx) to request',
+    envvar='BUAUT_GET',
+    help='Destination and amount/percentage to request'
+    'Can be set as environment variable BUAUT_GET',
     required=True,
     multiple=True,
     type=(click.STRING, click.STRING)

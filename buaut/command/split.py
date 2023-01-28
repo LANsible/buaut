@@ -15,7 +15,9 @@ from buaut import utils
 @click.pass_context
 @click.option(
     '--get',
-    help='Email and percentage/amount to request',
+    envvar='BUAUT_GET',
+    help='Email and percentage/amount to request'
+    'Can be set as environment variable BUAUT_GET',
     required=True,
     multiple=True,
     type=(click.STRING, click.STRING)
